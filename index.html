@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>AEtelecom · Tarifador HSR</title>
+<title>AEtelecom · Tarifador HSR PRO</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -15,24 +15,27 @@
   .box-total { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; text-align: center; }
   .box-total b { font-family: 'JetBrains Mono'; font-size: 24px; color: #fff; }
 
-  .btn-cdr { background: #16213e; border: 1px solid var(--green); color: var(--green); padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+  .controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  input { background: #16213e; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; font-family: 'JetBrains Mono'; }
+  .btn { background: var(--cyan); border: none; color: #000; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; height: 38px; }
+  .btn-cdr { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
   .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; position: relative; overflow: hidden; }
-  .card-fila::before { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--cyan); }
+  .card-fila { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; border-left: 4px solid var(--cyan); }
   .card-fila h2 { margin: 0 0 10px 0; font-size: 14px; color: var(--cyan); font-family: 'JetBrains Mono'; }
   
   .item-custo { display: flex; justify-content: space-between; margin: 5px 0; font-family: 'JetBrains Mono'; font-size: 13px; }
   .total-fila { margin-top: 15px; padding-top: 8px; border-top: 1px dashed #3d5470; font-size: 18px; font-weight: bold; color: #fff; }
   
-  .status-log { background: #000; padding: 10px; border: 1px solid var(--border); font-family: 'JetBrains Mono'; font-size: 11px; max-height: 150px; overflow-y: auto; margin-top: 20px; color: #5c7a9d; }
+  .status-log { background: #000; padding: 10px; border: 1px solid var(--border); font-family: 'JetBrains Mono'; font-size: 11px; max-height: 120px; overflow-y: auto; margin-top: 20px; color: #5c7a9d; }
 </style>
 </head>
 <body>
 
 <div class="header-meta">
-  <h1 style="margin:0;">TARIFADOR <span style="color:var(--cyan)">HSR</span></h1>
-  <div style="text-align:right"><small>OPERADORA: <b>AETELECOM</b></small></div>
+  <h1 style="margin:0;">TARIFADOR <span style="color:var(--cyan)">HSR</span> <small style="font-size: 12px; color: var(--green)">MAILING API</small></h1>
+  <div>OPERADORA: <b>AETELECOM</b></div>
 </div>
 
 <div class="resumo-geral">
@@ -41,11 +44,21 @@
   <div class="box-total"><span>TOTAL ACUMULADO</span><br><b id="g-total" style="color:var(--cyan)">R$ 0,00</b></div>
 </div>
 
-<button class="btn-cdr" onclick="exportarCDR()">EXTRAIR CDR (AETELECOM)</button>
+<div class="controls">
+  <div class="input-group">
+    <label style="font-size: 10px;">DATA INÍCIO</label>
+    <input type="text" id="startDate" value="2026-03-18 01:00:00">
+  </div>
+  <div class="input-group">
+    <label style="font-size: 10px;">DATA FIM</label>
+    <input type="text" id="endDate" value="2026-03-18 18:30:00">
+  </div>
+  <button class="btn" onclick="sincronizarHistorico()">SINCRONIZAR</button>
+  <button class="btn-cdr" onclick="exportarCDR()">EXTRAIR CDR</button>
+</div>
 
 <div class="grid-filas" id="gridFilas"></div>
-
-<div class="status-log" id="logSistema">[SISTEMA] Iniciando bilhetagem HSR...</div>
+<div class="status-log" id="logSistema">[SISTEMA] Aguardando sincronização...</div>
 
 <script>
 const firebaseConfig = {
@@ -56,38 +69,34 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
+const BASE_API = 'https://fastdialer.fastquest.net/app/discador/mailing_api.php';
 const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
 
 const PRECOS = { FIXO: 0.028, CEL: 0.030 }; //
-let dbLocal = {}; 
-let cdrParaExportar = [];
+let dbLocal = {};
+let registrosCDR = [];
 
-// Carregar dados existentes para não zerar
-db.ref('tarifador_hsr_v5').on('value', snap => {
+// Carrega o acumulado do Firebase
+db.ref('tarifador_hsr_v6').on('value', snap => {
   dbLocal = snap.val() || {};
   renderizar();
 });
 
 function log(msg, erro = false) {
   const el = document.getElementById('logSistema');
-  const cor = erro ? '#ff4560' : '#00ff9d';
-  el.innerHTML += `<div style="color:${cor}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  el.innerHTML += `<div style="color:${erro ? '#ff4560' : '#00ff9d'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
   el.scrollTop = el.scrollHeight;
 }
 
-function identificarFilaEEntrevistador(agentName) {
-  if (!agentName || agentName.includes("não identificado")) return { fila: "OUTROS", op: "SISTEMA" };
-  
-  // Limpa o ID após o ponto e vírgula
-  let limpo = agentName.split(';')[0];
-  
-  // A FILA é o que vem antes do primeiro "-"
-  if (limpo.includes('-')) {
-    let partes = limpo.split('-');
+// Lógica de quebra revisada: FILA (antes do -) e ENTREVISTADOR (depois do -)
+function parseAgente(raw) {
+  if (!raw || raw.includes("não identificado")) return { fila: "OUTROS", op: "SISTEMA" };
+  let base = raw.split(';')[0];
+  if (base.includes('-')) {
+    let partes = base.split('-');
     return { fila: partes[0].trim(), op: partes[1].trim() };
   }
-  return { fila: limpo.trim(), op: "OPERADOR" };
+  return { fila: base.trim(), op: "OPERADOR" };
 }
 
 function ehCelular(num) {
@@ -95,45 +104,49 @@ function ehCelular(num) {
   return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
 }
 
-async function tarifar() {
+async function sincronizarHistorico() {
+  const start = document.getElementById('startDate').value;
+  const end = document.getElementById('endDate').value;
+  const urlFinal = `${BASE_API}?report_status=1&start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}`;
+  
+  log("Consultando Mailing API...");
+  
   try {
-    const res = await fetch(proxy(API_URL));
+    const res = await fetch(proxy(urlFinal));
     const data = await res.json();
-    const calls = data.calls || [];
+    const calls = data.calls || data.data || []; // Ajuste dependendo de como a mailing_api retorna a lista
     
-    if (calls.length === 0) {
-      log("Monitorando... Nenhuma chamada ativa no momento.");
-      return;
-    }
+    if (calls.length === 0) return log("Nenhum registro encontrado no período.", true);
 
+    // Reiniciamos o processamento para garantir que a FILA seja a chave
     calls.forEach(c => {
-      const info = identificarFilaEEntrevistador(c.agent_info?.agent_name);
-      const tipo = ehCelular(c.caller_number) ? 'CEL' : 'FIXO';
-      const min = (parseInt(c.duration) || 0) / 60;
-      const custo = min * (tipo === 'CEL' ? PRECOS.CEL : PRECOS.FIXO);
+      // mailing_api costuma usar nomes de campos diferentes da active_calls
+      const agenteRaw = c.agent_name || c.agent_info?.agent_name || "";
+      const info = parseAgente(agenteRaw);
+      const destino = c.phone_number || c.caller_number || "";
+      const tipo = ehCelular(destino) ? 'CEL' : 'FIXO';
+      const duracao = parseInt(c.duration) || 0;
+      const custo = (duracao / 60) * (tipo === 'CEL' ? PRECOS.CEL : PRECOS.FIXO);
 
-      // SOMA AO ACUMULADO (Sem zerar)
       if (!dbLocal[info.fila]) dbLocal[info.fila] = { fixo: 0, cel: 0 };
       
       if (tipo === 'CEL') dbLocal[info.fila].cel += custo;
       else dbLocal[info.fila].fixo += custo;
 
-      cdrParaExportar.push({
-        op: "AEtelecom",
+      registrosCDR.push({
+        operadora: "AEtelecom",
         fila: info.fila,
         entrevistador: info.op,
-        destino: c.caller_number,
+        numero: destino,
         tipo: tipo,
         valor: custo.toFixed(4)
       });
     });
 
-    // Salva no Firebase para persistência
-    await db.ref('tarifador_hsr_v5').set(dbLocal);
-    log(`Tarifado com sucesso: ${calls.length} chamadas processadas.`);
-
+    await db.ref('tarifador_hsr_v6').set(dbLocal);
+    log(`Sincronizado! ${calls.length} registros processados.`);
   } catch (e) {
-    log("Erro ao acessar API ou JSON inválido.", true); //
+    log("Erro na sincronização. Verifique o formato das datas.", true);
   }
 }
 
@@ -160,19 +173,15 @@ function renderizar() {
 }
 
 function exportarCDR() {
-  if (cdrParaExportar.length === 0) return alert("Sem dados de chamadas recentes.");
+  if (registrosCDR.length === 0) return alert("Sincronize os dados primeiro.");
   let csv = "Operadora;Fila;Entrevistador;Destino;Tipo;Valor\n";
-  cdrParaExportar.forEach(r => csv += `AEtelecom;${r.fila};${r.entrevistador};${r.destino};${r.tipo};${r.valor}\n`);
+  registrosCDR.forEach(r => csv += `${r.operadora};${r.fila};${r.entrevistador};${r.numero};${r.tipo};${r.valor}\n`);
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `CDR_AETELECOM_HSR.csv`;
+  a.download = `CDR_AETELECOM_HISTORICO.csv`;
   a.click();
 }
-
-// Ciclo de 5 min para bater com o log da imagem
-setInterval(tarifar, 300000);
-tarifar();
 </script>
 </body>
 </html>
