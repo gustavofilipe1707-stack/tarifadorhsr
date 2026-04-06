@@ -2,42 +2,55 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>FastDialer · Gestão de Custos por Fila</title>
+<title>FastDialer · Financeiro & CDR</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@600;700&display=swap');
-  :root { --bg: #070b14; --card: #0c1220; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; --red: #ff4560; }
+  :root { --bg: #05080f; --card: #0c1220; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; }
   body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding: 20px; }
   
-  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; }
-  .card-fila h2 { margin: 0 0 15px 0; color: var(--cyan); font-size: 20px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .resumo-geral { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+  .box-total { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; text-align: center; }
+  .box-total span { display: block; font-size: 11px; color: #3d5470; text-transform: uppercase; }
+  .box-total b { font-family: 'JetBrains Mono'; font-size: 22px; color: #fff; }
+
+  .actions { display: flex; gap: 10px; margin-bottom: 30px; }
+  .btn-cdr { 
+    background: transparent; border: 1px solid var(--cyan); color: var(--cyan); 
+    padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;
+    font-family: 'Rajdhani'; text-transform: uppercase; transition: 0.3s;
+  }
+  .btn-cdr:hover { background: var(--cyan); color: #000; }
+
+  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-top: 3px solid var(--cyan); }
+  .card-fila h2 { margin: 0 0 15px 0; color: var(--cyan); font-size: 15px; font-family: 'JetBrains Mono'; }
   
-  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
-  .label-fixo { color: var(--amber); }
-  .label-celular { color: var(--green); }
-  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 18px; color: #fff; font-weight: bold; }
-  
-  .status-api { position: fixed; bottom: 20px; right: 20px; padding: 8px 15px; border-radius: 20px; font-size: 11px; background: var(--card); border: 1px solid var(--border); z-index: 100; }
-  .log-mini { margin-top: 30px; font-family: 'JetBrains Mono'; font-size: 10px; color: #3d5470; border-top: 1px solid var(--border); padding-top: 10px; height: 80px; overflow-y: auto; }
+  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono'; font-size: 13px; }
+  .status-api { position: fixed; bottom: 20px; right: 20px; padding: 6px 12px; border-radius: 20px; font-size: 10px; background: #000; border: 1px solid var(--border); }
 </style>
 </head>
 <body>
 
-<header style="margin-bottom: 30px; border-left: 4px solid var(--cyan); padding-left: 15px;">
-  <h1 style="margin:0; font-size: 26px; letter-spacing: 1px;">FAST<span style="color:var(--cyan)">DIALER</span> BILHETADOR</h1>
-  <p style="margin:5px 0; color: #3d5470; font-weight: bold;">CONTROLE DE CUSTOS POR FILA · ATUALIZAÇÃO 5 MIN</p>
+<header style="margin-bottom: 25px;">
+  <h1 style="margin:0; font-size: 24px;">FAST<span style="color:var(--cyan)">DIALER</span> <span style="font-weight:300; font-size:14px; color:#3d5470;">Financeiro & CDR</span></h1>
 </header>
 
-<div class="grid-filas" id="gridFilas">
-  </div>
+<div class="resumo-geral">
+  <div class="box-total"><span>Fixo Geral</span><b id="geral-fixo" style="color:var(--amber)">R$ 0,00</b></div>
+  <div class="box-total"><span>Celular Geral</span><b id="geral-cel" style="color:var(--green)">R$ 0,00</b></div>
+  <div class="box-total"><span>Investimento Total</span><b id="geral-total" style="color:var(--cyan)">R$ 0,00</b></div>
+</div>
 
-<div class="status-api" id="apiStatus">STATUS: INICIANDO...</div>
-<div class="log-mini" id="logBody"></div>
+<div class="actions">
+  <button class="btn-cdr" onclick="exportarCDR()">⬇ Extrair CDR (CSV)</button>
+</div>
+
+<div class="grid-filas" id="gridFilas"></div>
+<div class="status-api" id="apiStatus">INICIANDO...</div>
 
 <script>
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
@@ -47,101 +60,113 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
-// Proxies de Backup
-const PROXY_1 = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
-const PROXY_2 = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
+const PROXY = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
 
-const TARIFAS = { FIXO: 0.028, CEL: 0.030 }; //
+const PRECO_FIXO = 0.028; //
+const PRECO_CEL = 0.030;  //
 
-let dadosFinanceiros = {};
+let dadosFilas = {};
+let chamadasRecentesParaCDR = [];
 
-// Sincroniza com Firebase
 db.ref('financeiro/filas').on('value', snap => {
-  dadosFinanceiros = snap.val() || {};
-  atualizarVisual();
+  dadosFilas = snap.val() || {};
+  renderizar();
 });
+
+function tratarInfo(agentInfo) {
+  const raw = agentInfo?.agent_name || "Desconhecido;Desconhecido";
+  const partes = raw.split(';');
+  return {
+    fila: partes[0] ? partes[0].trim() : "Sem Fila", //
+    entrevistador: partes[1] ? partes[1].trim() : "Sistema" //
+  };
+}
 
 function isCelular(num) {
   const n = String(num).replace(/\D/g, '');
-  // Regra: 3º dígito 7, 8 ou 9
-  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2));
-}
-
-async function tentarFetch(url) {
-  // Tenta Proxy 1
-  try {
-    const res = await fetch(PROXY_1(url));
-    if (res.ok) return await res.json();
-  } catch (e) {
-    console.warn("Proxy 1 falhou, tentando Proxy 2...");
-  }
-
-  // Tenta Proxy 2
-  const res2 = await fetch(PROXY_2(url));
-  if (!res2.ok) throw new Error("Ambos os proxies falharam");
-  return await res2.json();
+  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
 }
 
 async function rodarCiclo() {
-  const status = document.getElementById('apiStatus');
+  const statusEl = document.getElementById('apiStatus');
   try {
-    const data = await tentarFetch(API_URL);
+    const res = await fetch(PROXY(API_URL));
+    const data = await res.json();
     const calls = data.calls || [];
+    
+    // Limpamos o CDR temporário para pegar apenas as chamadas deste ciclo
+    chamadasRecentesParaCDR = [];
 
     calls.forEach(c => {
-      const fila = c.agent_info?.agent_name || "Fila Geral";
+      const info = tratarInfo(c.agent_info); //
       const tipo = isCelular(c.caller_number) ? 'celular' : 'fixo';
       const minutos = (parseInt(c.duration) || 0) / 60;
-      const custo = minutos * TARIFAS[tipo === 'celular' ? 'CEL' : 'FIXO'];
+      const custo = minutos * (tipo === 'celular' ? PRECO_CEL : PRECO_FIXO);
 
-      if (!dadosFinanceiros[fila]) dadosFinanceiros[fila] = { fixo: 0, celular: 0 };
-      dadosFinanceiros[fila][tipo] += custo;
+      // Salva para o CDR
+      chamadasRecentesParaCDR.push({
+        entrevistador: info.entrevistador,
+        fila: info.fila,
+        destino: c.caller_number,
+        tipo: tipo.toUpperCase(),
+        valor: custo.toFixed(4)
+      });
+
+      if (!dadosFilas[info.fila]) dadosFilas[info.fila] = { fixo: 0, celular: 0 };
+      dadosFilas[info.fila][tipo] += custo;
     });
 
-    await db.ref('financeiro/filas').set(dadosFinanceiros);
-    status.innerText = `ÚLTIMA ATUALIZAÇÃO: ${new Date().toLocaleTimeString()}`;
-    status.style.color = "var(--green)";
-    log(`Sucesso: ${calls.length} chamadas processadas.`);
-
+    await db.ref('financeiro/filas').set(dadosFilas);
+    statusEl.innerText = `SYNC OK: ${new Date().toLocaleTimeString()}`;
+    statusEl.style.color = "var(--green)";
   } catch (err) {
-    status.innerText = "ERRO DE CONEXÃO (API OFFLINE)";
-    status.style.color = "var(--red)";
-    log("Erro: " + err.message);
+    statusEl.innerText = "ERRO API";
+    statusEl.style.color = "#ff4560";
   }
 }
 
-function atualizarVisual() {
+function exportarCDR() {
+  if (chamadasRecentesParaCDR.length === 0) {
+    alert("Nenhuma chamada ativa no momento para gerar CDR.");
+    return;
+  }
+  
+  let csv = "Entrevistador;Fila;Numero Destino;Tipo;Valor (R$)\n";
+  chamadasRecentesParaCDR.forEach(row => {
+    csv += `${row.entrevistador};${row.fila};${row.destino};${row.tipo};${row.valor}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `CDR_FastDialer_${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function renderizar() {
   const container = document.getElementById('gridFilas');
-  container.innerHTML = Object.entries(dadosFinanceiros).map(([nome, valores]) => {
-    const fixo = valores.fixo || 0;
-    const celular = valores.celular || 0;
-    const total = fixo + celular;
+  let gFixo = 0, gCel = 0;
+
+  container.innerHTML = Object.entries(dadosFilas).map(([nome, valores]) => {
+    const totalFila = (valores.fixo || 0) + (valores.celular || 0);
+    gFixo += (valores.fixo || 0); gCel += (valores.celular || 0);
     return `
       <div class="card-fila">
         <h2>${nome}</h2>
-        <div class="item-custo">
-          <span class="label-fixo">Custo Fixo (0.028):</span>
-          <span>R$ ${fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
-        </div>
-        <div class="item-custo">
-          <span class="label-celular">Custo Celular (0.03):</span>
-          <span>R$ ${celular.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
-        </div>
-        <div class="total-fila">
-          <span>TOTAL:</span>
-          <span style="color:var(--cyan)">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-        </div>
+        <div class="item-custo"><span>Fixo (0.028):</span><span style="color:var(--amber)">R$ ${valores.fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        <div class="item-custo"><span>Celular (0.03):</span><span style="color:var(--green)">R$ ${valores.celular.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        <div class="total-fila"><span>TOTAL:</span><span style="color:var(--cyan)">R$ ${totalFila.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
       </div>
     `;
   }).join('');
+
+  document.getElementById('geral-fixo').innerText = `R$ ${gFixo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('geral-cel').innerText = `R$ ${gCel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('geral-total').innerText = `R$ ${(gFixo + gCel).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
 }
 
-function log(msg) {
-  const b = document.getElementById('logBody');
-  b.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + b.innerHTML;
-}
-
-// Ciclo de 5 minutos
 setInterval(rodarCiclo, 300000);
 rodarCiclo();
 </script>
