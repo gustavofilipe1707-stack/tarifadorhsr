@@ -7,30 +7,27 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@600;700&display=swap');
-  :root { --bg: #070b14; --card: #0c1220; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; }
+  :root { --bg: #070b14; --card: #0c1220; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; --red: #ff4560; }
   body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding: 20px; }
   
-  /* Grid de Projetos/Filas */
-  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; }
   .card-fila h2 { margin: 0 0 15px 0; color: var(--cyan); font-size: 20px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
   
-  /* Linhas de Valores */
-  .item-custo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
-  .item-custo span:last-child { font-weight: bold; }
+  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
   .label-fixo { color: var(--amber); }
   .label-celular { color: var(--green); }
-  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 18px; color: #fff; }
+  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 18px; color: #fff; font-weight: bold; }
   
-  .status-api { position: fixed; bottom: 20px; right: 20px; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; background: var(--card); border: 1px solid var(--border); }
-  .log-mini { margin-top: 30px; font-family: 'JetBrains Mono'; font-size: 11px; color: #3d5470; border-top: 1px solid var(--border); padding-top: 10px; }
+  .status-api { position: fixed; bottom: 20px; right: 20px; padding: 8px 15px; border-radius: 20px; font-size: 11px; background: var(--card); border: 1px solid var(--border); z-index: 100; }
+  .log-mini { margin-top: 30px; font-family: 'JetBrains Mono'; font-size: 10px; color: #3d5470; border-top: 1px solid var(--border); padding-top: 10px; height: 80px; overflow-y: auto; }
 </style>
 </head>
 <body>
 
-<header style="margin-bottom: 30px;">
-  <h1 style="margin:0; font-size: 28px;">FAST<span style="color:var(--cyan)">DIALER</span> BILHETADOR</h1>
-  <p style="margin:5px 0; color: #3d5470;">Resumo Financeiro por Fila (Ciclo: 5 Minutos)</p>
+<header style="margin-bottom: 30px; border-left: 4px solid var(--cyan); padding-left: 15px;">
+  <h1 style="margin:0; font-size: 26px; letter-spacing: 1px;">FAST<span style="color:var(--cyan)">DIALER</span> BILHETADOR</h1>
+  <p style="margin:5px 0; color: #3d5470; font-weight: bold;">CONTROLE DE CUSTOS POR FILA · ATUALIZAÇÃO 5 MIN</p>
 </header>
 
 <div class="grid-filas" id="gridFilas">
@@ -50,7 +47,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
-const PROXY = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_URL)}`;
+// Proxies de Backup
+const PROXY_1 = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+const PROXY_2 = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
+
 const TARIFAS = { FIXO: 0.028, CEL: 0.030 }; //
 
 let dadosFinanceiros = {};
@@ -63,63 +63,72 @@ db.ref('financeiro/filas').on('value', snap => {
 
 function isCelular(num) {
   const n = String(num).replace(/\D/g, '');
-  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
+  // Regra: 3º dígito 7, 8 ou 9
+  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2));
+}
+
+async function tentarFetch(url) {
+  // Tenta Proxy 1
+  try {
+    const res = await fetch(PROXY_1(url));
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn("Proxy 1 falhou, tentando Proxy 2...");
+  }
+
+  // Tenta Proxy 2
+  const res2 = await fetch(PROXY_2(url));
+  if (!res2.ok) throw new Error("Ambos os proxies falharam");
+  return await res2.json();
 }
 
 async function rodarCiclo() {
   const status = document.getElementById('apiStatus');
   try {
-    const res = await fetch(`${PROXY}&t=${Date.now()}`);
-    if (!res.ok) throw new Error("Falha no Proxy");
-    const data = await res.json();
+    const data = await tentarFetch(API_URL);
     const calls = data.calls || [];
-
-    let atualizacoes = {};
 
     calls.forEach(c => {
       const fila = c.agent_info?.agent_name || "Fila Geral";
-      const tipo = isCelular(c.caller_number) ? 'CEL' : 'FIXO';
+      const tipo = isCelular(c.caller_number) ? 'celular' : 'fixo';
       const minutos = (parseInt(c.duration) || 0) / 60;
-      const custo = minutos * TARIFAS[tipo];
+      const custo = minutos * TARIFAS[tipo === 'celular' ? 'CEL' : 'FIXO'];
 
-      // Inicializa estrutura se não existir
       if (!dadosFinanceiros[fila]) dadosFinanceiros[fila] = { fixo: 0, celular: 0 };
-      
-      // Incrementa conforme o tipo
-      if (tipo === 'FIXO') dadosFinanceiros[fila].fixo += custo;
-      else dadosFinanceiros[fila].celular += custo;
+      dadosFinanceiros[fila][tipo] += custo;
     });
 
-    // Salva no Firebase
     await db.ref('financeiro/filas').set(dadosFinanceiros);
-    status.innerText = `ÚLTIMA SYNC: ${new Date().toLocaleTimeString()}`;
+    status.innerText = `ÚLTIMA ATUALIZAÇÃO: ${new Date().toLocaleTimeString()}`;
     status.style.color = "var(--green)";
-    log("Processamento concluído com sucesso.");
+    log(`Sucesso: ${calls.length} chamadas processadas.`);
 
   } catch (err) {
-    status.innerText = "ERRO NA API (FETCH FAILED)";
+    status.innerText = "ERRO DE CONEXÃO (API OFFLINE)";
     status.style.color = "var(--red)";
-    log("Erro no fetch: " + err.message);
+    log("Erro: " + err.message);
   }
 }
 
 function atualizarVisual() {
   const container = document.getElementById('gridFilas');
   container.innerHTML = Object.entries(dadosFinanceiros).map(([nome, valores]) => {
-    const total = (valores.fixo || 0) + (valores.celular || 0);
+    const fixo = valores.fixo || 0;
+    const celular = valores.celular || 0;
+    const total = fixo + celular;
     return `
       <div class="card-fila">
         <h2>${nome}</h2>
         <div class="item-custo">
-          <span class="label-fixo">Total Fixo:</span>
-          <span>R$ ${(valores.fixo || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
+          <span class="label-fixo">Custo Fixo (0.028):</span>
+          <span>R$ ${fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
         </div>
         <div class="item-custo">
-          <span class="label-celular">Total Celular:</span>
-          <span>R$ ${(valores.celular || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
+          <span class="label-celular">Custo Celular (0.03):</span>
+          <span>R$ ${celular.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
         </div>
-        <div class="item-custo total-fila">
-          <span>TOTAL GERAL:</span>
+        <div class="total-fila">
+          <span>TOTAL:</span>
           <span style="color:var(--cyan)">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
         </div>
       </div>
