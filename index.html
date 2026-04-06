@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>AEtelecom · Tarifador HSR v9</title>
+<title>AEtelecom · Tarifador HSR v10</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -11,25 +11,23 @@
   body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding: 20px; }
   
   .header-main { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--cyan); padding-bottom: 10px; margin-bottom: 20px; }
-  
-  /* Dashboards de Resumo */
   .dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-  .resumo-box { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; }
+  .resumo-box { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; border-top: 3px solid var(--cyan); }
   .resumo-box h3 { margin: 0 0 10px 0; font-size: 14px; color: var(--cyan); text-transform: uppercase; }
   .stats { display: flex; justify-content: space-around; text-align: center; }
-  .stats div span { font-size: 10px; color: #5c7a9d; display: block; }
-  .stats div b { font-family: 'JetBrains Mono'; font-size: 20px; color: #fff; }
+  .stats div b { font-family: 'JetBrains Mono'; font-size: 20px; color: #fff; display: block; }
+  .stats div span { font-size: 10px; color: #5c7a9d; text-transform: uppercase; }
 
-  /* Grid de Filas */
-  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; border-left: 4px solid var(--green); }
-  .card-fila h2 { margin: 0 0 5px 0; font-size: 14px; color: var(--cyan); font-family: 'JetBrains Mono'; }
-  .op-tag { font-size: 10px; color: #5c7a9d; margin-bottom: 10px; display: block; border-bottom: 1px solid #1e2d45; padding-bottom: 5px; }
+  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; position: relative; }
+  .card-fila::before { content: "FILA"; position: absolute; top: 10px; right: 10px; font-size: 9px; color: var(--cyan); opacity: 0.5; }
+  .card-fila h2 { margin: 0 0 5px 0; font-size: 13px; color: var(--green); font-family: 'JetBrains Mono'; }
+  .op-info { font-size: 11px; color: #5c7a9d; margin-bottom: 15px; display: block; border-bottom: 1px solid #1e2d45; }
   
-  .item-custo { display: flex; justify-content: space-between; margin: 4px 0; font-family: 'JetBrains Mono'; font-size: 13px; }
-  .total-fila { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #3d5470; font-size: 18px; font-weight: bold; text-align: right; }
+  .val { display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 13px; margin: 4px 0; }
+  .total-fila { margin-top: 15px; padding-top: 8px; border-top: 1px dashed #3d5470; font-size: 18px; font-weight: bold; text-align: right; color: #fff; }
 
-  .status-log { background: #000; padding: 10px; border: 1px solid var(--border); font-family: 'JetBrains Mono'; font-size: 10px; max-height: 100px; overflow-y: auto; margin-top: 20px; color: #5c7a9d; }
+  .status-log { background: #000; padding: 12px; border: 1px solid var(--border); font-family: 'JetBrains Mono'; font-size: 11px; max-height: 120px; overflow-y: auto; margin-top: 25px; color: #5c7a9d; }
 </style>
 </head>
 <body>
@@ -41,26 +39,25 @@
 
 <div class="dash-container">
   <div class="resumo-box">
-    <h3>Consumo Mensal (Abril)</h3>
+    <h3>Consumo Mensal (Histórico)</h3>
     <div class="stats">
-      <div><span>FIXO</span><b id="m-fixo" style="color:var(--amber)">R$ 0,00</b></div>
-      <div><span>CELULAR</span><b id="m-cel" style="color:var(--green)">R$ 0,00</b></div>
-      <div><span>TOTAL</span><b id="m-total" style="color:var(--cyan)">R$ 0,00</b></div>
+      <div><span>Fixo</span><b id="m-fixo" style="color:var(--amber)">R$ 0,00</b></div>
+      <div><span>Celular</span><b id="m-cel" style="color:var(--green)">R$ 0,00</b></div>
+      <div><span>Total</span><b id="m-total" style="color:var(--cyan)">R$ 0,00</b></div>
     </div>
   </div>
   <div class="resumo-box" style="border-color: var(--green);">
     <h3>Consumo Hoje</h3>
     <div class="stats">
-      <div><span>FIXO</span><b id="d-fixo" style="color:var(--amber)">R$ 0,00</b></div>
-      <div><span>CELULAR</span><b id="d-cel" style="color:var(--green)">R$ 0,00</b></div>
-      <div><span>TOTAL</span><b id="d-total" style="color:var(--cyan)">R$ 0,00</b></div>
+      <div><span>Fixo</span><b id="d-fixo" style="color:var(--amber)">R$ 0,00</b></div>
+      <div><span>Celular</span><b id="d-cel" style="color:var(--green)">R$ 0,00</b></div>
+      <div><span>Total</span><b id="d-total" style="color:var(--cyan)">R$ 0,00</b></div>
     </div>
   </div>
 </div>
 
 <div class="grid-filas" id="gridFilas"></div>
-
-<div class="status-log" id="logSistema">[SISTEMA] Iniciando ciclo de 5 minutos...</div>
+<div class="status-log" id="logSistema">[SISTEMA] Conectando ao Banco de Dados...</div>
 
 <script>
 const firebaseConfig = {
@@ -71,83 +68,77 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const API_MAILING = 'https://fastdialer.fastquest.net/app/discador/mailing_api.php';
+const API_URL = 'https://fastdialer.fastquest.net/app/discador/mailing_api.php';
+// NOVO PROXY PARA EVITAR ERRO 404
 const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
 
-const TARIFAS = { FIXO: 0.028, CEL: 0.030 }; 
+const PRECOS = { FIXO: 0.028, CEL: 0.030 }; //
 let dbLocal = { mensal: {}, diario: {} };
 
-db.ref('tarifador_hsr_v9').on('value', snap => {
+db.ref('tarifador_hsr_v10').on('value', snap => {
   dbLocal = snap.val() || { mensal: {}, diario: {} };
   renderizar();
 });
 
-function log(msg) {
+function log(msg, erro = false) {
   const el = document.getElementById('logSistema');
-  el.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  el.innerHTML += `<div style="color:${erro ? '#ff4560' : '#00ff9d'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
   el.scrollTop = el.scrollHeight;
 }
 
-// Quebra exata: FILA (antes do -) e ENTREVISTADOR (depois do -)
-function parsearAgente(str) {
-  if (!str) return { fila: "OUTROS", op: "SISTEMA" };
-  let base = str.split(';')[0];
-  if (base.includes('-')) {
-    let p = base.split('-');
+// Quebra revisada: FILA (amarelo/vermelho) e OPERADOR
+function parseAgente(str) {
+  if (!str) return { fila: "GERAL", op: "SISTEMA" };
+  let limpo = str.split(';')[0];
+  if (limpo.includes('-')) {
+    let p = limpo.split('-');
     return { fila: p[0].trim(), op: p[1].trim() };
   }
-  return { fila: base.trim(), op: "GERAL" };
+  return { fila: limpo.trim(), op: "OPERADOR" };
 }
 
-function ehCel(num) {
+function ehCelular(num) {
   const n = String(num).replace(/\D/g, '');
-  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2));
+  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
 }
 
-async function fetchHSR(inicio, fim) {
-  const url = `${API_MAILING}?report_status=1&start_date=${encodeURIComponent(inicio)}&end_date=${encodeURIComponent(fim)}`;
-  const res = await fetch(proxy(url));
-  const json = await res.json();
-  return json.calls || json.data || [];
-}
-
-async function rodarSincronizacao() {
+async function sincronizar() {
   const agora = new Date();
-  const hojeInicio = agora.toISOString().split('T')[0] + " 00:00:00";
-  const mesInicio = agora.toISOString().slice(0, 8) + "01 00:00:00";
+  const hojeStart = agora.toISOString().split('T')[0] + " 00:00:00";
+  const mesStart = agora.toISOString().slice(0, 8) + "01 00:00:00";
   const agoraFim = agora.toISOString().slice(0, 19).replace('T', ' ');
 
-  log("Sincronizando dados AEtelecom...");
+  log("Buscando dados na FastQuest...");
 
   try {
-    // 1. Busca Histórico do Mês
-    const chamadasMes = await fetchHSR(mesInicio, agoraFim);
-    let acumuladoMes = {};
-    
-    // 2. Busca Histórico de Hoje
-    const chamadasHoje = await fetchHSR(hojeInicio, agoraFim);
-    let acumuladoHoje = {};
+    const res = await fetch(proxy(`${API_URL}?report_status=1&start_date=${encodeURIComponent(mesStart)}&end_date=${encodeURIComponent(agoraFim)}`));
+    const data = await res.json();
+    const calls = data.calls || data.data || [];
 
-    function processar(lista, destinoObj) {
-      lista.forEach(c => {
-        const info = parsearAgente(c.agent_name || c.agent_info?.agent_name);
-        const tipo = ehCel(c.phone_number || c.caller_number) ? 'CEL' : 'FIXO';
-        const custo = (parseInt(c.duration || 0) / 60) * (tipo === 'CEL' ? TARIFAS.CEL : TARIFAS.FIXO);
+    let novoMensal = {};
+    let novoDiario = {};
 
-        if (!destinoObj[info.fila]) destinoObj[info.fila] = { fixo: 0, cel: 0, op: info.op };
-        if (tipo === 'CEL') destinoObj[info.fila].cel += custo;
-        else destinoObj[info.fila].fixo += custo;
-      });
-    }
+    calls.forEach(c => {
+      const info = parseAgente(c.agent_name || c.agent_info?.agent_name);
+      const tipo = ehCelular(c.phone_number || c.caller_number) ? 'CEL' : 'FIXO';
+      const custo = (parseInt(c.duration || 0) / 60) * (tipo === 'CEL' ? PRECOS.CEL : PRECOS.FIXO);
+      
+      // Processa Mensal
+      if (!novoMensal[info.fila]) novoMensal[info.fila] = { fixo: 0, cel: 0, op: info.op };
+      novoMensal[info.fila][tipo.toLowerCase()] += custo;
 
-    processar(chamadasMes, acumuladoMes);
-    processar(chamadasHoje, acumuladoHoje);
+      // Processa Diário (se for de hoje)
+      if (c.start_date && c.start_date >= hojeStart) {
+        if (!novoDiario[info.fila]) novoDiario[info.fila] = { fixo: 0, cel: 0 };
+        novoDiario[info.fila][tipo.toLowerCase()] += custo;
+      }
+    });
 
-    await db.ref('tarifador_hsr_v9').set({ mensal: acumuladoMes, diario: acumuladoHoje });
-    log("Sincronização concluída com sucesso.");
+    await db.ref('tarifador_hsr_v10').set({ mensal: novoMensal, diario: novoDiario });
+    log(`Sincronizado: ${calls.length} chamadas no mês.`);
 
   } catch (e) {
-    log("Erro na API: Verifique a conexão.");
+    log("Erro de Conexão: Proxy ou API fora do ar.", true);
   }
 }
 
@@ -155,35 +146,32 @@ function renderizar() {
   const grid = document.getElementById('gridFilas');
   let mF = 0, mC = 0, dF = 0, dC = 0;
 
-  // Totais Mensais
-  Object.values(dbLocal.mensal || {}).forEach(v => { mF += v.fixo; mC += v.cel; });
-  // Totais Diários
-  Object.values(dbLocal.diario || {}).forEach(v => { dF += v.fixo; dC += v.cel; });
+  Object.values(dbLocal.mensal).forEach(v => { mF += v.fixo; mC += v.cel; });
+  Object.values(dbLocal.diario).forEach(v => { dF += v.fixo; dC += v.cel; });
 
   document.getElementById('m-fixo').innerText = `R$ ${mF.toFixed(2)}`;
   document.getElementById('m-cel').innerText = `R$ ${mC.toFixed(2)}`;
   document.getElementById('m-total').innerText = `R$ ${(mF + mC).toFixed(2)}`;
-
   document.getElementById('d-fixo').innerText = `R$ ${dF.toFixed(2)}`;
   document.getElementById('d-cel').innerText = `R$ ${dC.toFixed(2)}`;
   document.getElementById('d-total').innerText = `R$ ${(dF + dC).toFixed(2)}`;
 
-  // Cards por Fila (Baseado no Mensal)
-  grid.innerHTML = Object.entries(dbLocal.mensal || {}).map(([fila, v]) => {
-    const vHoje = dbLocal.diario[fila] || { fixo: 0, cel: 0 };
+  grid.innerHTML = Object.entries(dbLocal.mensal).map(([fila, v]) => {
+    const hoje = dbLocal.diario[fila] || { fixo: 0, cel: 0 };
     return `
       <div class="card-fila">
-        <h2>FILA: ${fila}</h2>
-        <span class="op-tag">Entrevistador: ${v.op}</span>
-        <div class="item-custo"><span>Gasto Hoje:</span><b>R$ ${(vHoje.fixo + vHoje.cel).toFixed(3)}</b></div>
-        <div class="item-custo"><span>Acumulado Mês:</span><b style="color:var(--cyan)">R$ ${(v.fixo + v.cel).toFixed(3)}</b></div>
+        <h2>${fila}</h2>
+        <span class="op-info">Último Operador: ${v.op}</span>
+        <div class="val"><span>Gasto Hoje:</span><b>R$ ${(hoje.fixo + hoje.cel).toFixed(3)}</b></div>
+        <div class="val"><span>Acumulado Mês:</span><b style="color:var(--cyan)">R$ ${(v.fixo + v.cel).toFixed(3)}</b></div>
+        <div class="total-fila">TOTAL: R$ ${(v.fixo + v.cel).toFixed(2)}</div>
       </div>
     `;
   }).join('');
 }
 
-setInterval(rodarSincronizacao, 300000); // 5 minutos
-rodarSincronizacao();
+setInterval(sincronizar, 300000); // 5 minutos
+sincronizar();
 </script>
 </body>
 </html>
