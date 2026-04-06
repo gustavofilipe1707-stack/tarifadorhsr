@@ -2,84 +2,45 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FastDialer · Bilhetador por Fila</title>
-
+<title>FastDialer · Gestão de Custos por Fila</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
-
-:root {
-  --bg: #070b14; --bg2: #0c1220; --border: #1e2d45;
-  --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee;
-}
-
-body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding-bottom: 50px; }
-
-/* Dashboard de Filas */
-.project-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px; padding: 20px;
-}
-.project-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 15px;
-  position: relative; overflow: hidden;
-}
-.project-card::before {
-  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan);
-}
-.p-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px; text-transform: uppercase; }
-.p-stat { display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 13px; margin-top: 5px; }
-.p-val { color: var(--green); font-weight: 700; }
-
-/* Tabela Principal */
-.main-container { padding: 0 20px; }
-.table-header { 
-  display: grid; grid-template-columns: 120px 1fr 100px 120px 150px; 
-  background: var(--border); padding: 10px; border-radius: 5px 5px 0 0;
-  font-size: 12px; font-weight: 700; color: var(--cyan);
-}
-.row { 
-  display: grid; grid-template-columns: 120px 1fr 100px 120px 150px; 
-  background: var(--bg2); padding: 12px; border-bottom: 1px solid var(--border);
-  align-items: center; font-size: 14px;
-}
-
-.log-panel { 
-  margin: 20px; background: #000; padding: 15px; border-radius: 8px;
-  font-family: 'JetBrains Mono'; font-size: 11px; height: 120px; overflow-y: auto;
-}
-.sync-badge { 
-  position: fixed; top: 15px; right: 20px; padding: 5px 15px; 
-  background: var(--green); color: #000; border-radius: 20px; font-weight: 700; font-size: 12px;
-}
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@600;700&display=swap');
+  :root { --bg: #070b14; --card: #0c1220; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; }
+  body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding: 20px; }
+  
+  /* Grid de Projetos/Filas */
+  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .card-fila h2 { margin: 0 0 15px 0; color: var(--cyan); font-size: 20px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  
+  /* Linhas de Valores */
+  .item-custo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+  .item-custo span:last-child { font-weight: bold; }
+  .label-fixo { color: var(--amber); }
+  .label-celular { color: var(--green); }
+  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 18px; color: #fff; }
+  
+  .status-api { position: fixed; bottom: 20px; right: 20px; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; background: var(--card); border: 1px solid var(--border); }
+  .log-mini { margin-top: 30px; font-family: 'JetBrains Mono'; font-size: 11px; color: #3d5470; border-top: 1px solid var(--border); padding-top: 10px; }
 </style>
 </head>
 <body>
 
-<div class="sync-badge" id="syncStatus">AGUARDANDO...</div>
-
-<header style="padding: 20px 20px 0 20px;">
-    <h1 style="margin:0; font-size: 24px; color: var(--cyan);">FAST<span style="color:#fff">DIALER</span> BILHETADOR</h1>
-    <p style="color: #3d5470; font-size: 12px; margin: 5px 0 0 0;">INTEGRADOR RTDB · CICLO 5 MINUTOS</p>
+<header style="margin-bottom: 30px;">
+  <h1 style="margin:0; font-size: 28px;">FAST<span style="color:var(--cyan)">DIALER</span> BILHETADOR</h1>
+  <p style="margin:5px 0; color: #3d5470;">Resumo Financeiro por Fila (Ciclo: 5 Minutos)</p>
 </header>
 
-<div class="project-grid" id="projectGrid">
-    </div>
+<div class="grid-filas" id="gridFilas">
+  </div>
 
-<div class="main-container">
-    <div class="table-header">
-        <div>DURAÇÃO</div><div>NÚMERO</div><div>TIPO</div><div>FILA/PROJETO</div><div>STATUS</div>
-    </div>
-    <div id="callsTable"></div>
-</div>
-
-<div class="log-panel" id="logBody"></div>
+<div class="status-api" id="apiStatus">STATUS: INICIANDO...</div>
+<div class="log-mini" id="logBody"></div>
 
 <script>
-// CONFIG FIREBASE
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
@@ -88,113 +49,92 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// CONFIG API & TARIFAS
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
 const PROXY = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_URL)}`;
-const TARIFAS = { CEL: 0.030, FIXO: 0.028 }; //
+const TARIFAS = { FIXO: 0.028, CEL: 0.030 }; //
 
-let historicoFilas = {};
+let dadosFinanceiros = {};
 
-// 1. Carrega custos acumulados do Firebase
-db.ref('financeiro/custos_por_fila').on('value', snap => {
-    historicoFilas = snap.val() || {};
-    renderProjectCards();
+// Sincroniza com Firebase
+db.ref('financeiro/filas').on('value', snap => {
+  dadosFinanceiros = snap.val() || {};
+  atualizarVisual();
 });
 
 function isCelular(num) {
-    const clean = String(num).replace(/\D/g, '');
-    // Verifica se tem 10-11 dígitos e se o 3º dígito é 7, 8 ou 9
-    return clean.length >= 10 && ["7","8","9"].includes(clean.charAt(2));
+  const n = String(num).replace(/\D/g, '');
+  return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
 }
 
-async function processarBilhetagem() {
-    const status = document.getElementById('syncStatus');
-    status.style.background = '#ffb800';
-    status.textContent = "PROCESSANDO...";
+async function rodarCiclo() {
+  const status = document.getElementById('apiStatus');
+  try {
+    const res = await fetch(`${PROXY}&t=${Date.now()}`);
+    if (!res.ok) throw new Error("Falha no Proxy");
+    const data = await res.json();
+    const calls = data.calls || [];
 
-    try {
-        const res = await fetch(`${PROXY}&t=${Date.now()}`);
-        const data = await res.json();
-        const calls = data.calls || [];
-        
-        let batchUpdates = {};
-        let custosDesteCiclo = {};
+    let atualizacoes = {};
 
-        calls.forEach(c => {
-            const fila = c.agent_info?.agent_name || "Fila Geral";
-            const tipo = isCelular(c.caller_number) ? 'CEL' : 'FIXO';
-            const tarifa = TARIFAS[tipo];
-            
-            // Cálculo: (segundos / 60) * tarifa
-            const minutos = (parseInt(c.duration) || 0) / 60;
-            const custo = minutos * tarifa;
+    calls.forEach(c => {
+      const fila = c.agent_info?.agent_name || "Fila Geral";
+      const tipo = isCelular(c.caller_number) ? 'CEL' : 'FIXO';
+      const minutos = (parseInt(c.duration) || 0) / 60;
+      const custo = minutos * TARIFAS[tipo];
 
-            // Acumula por fila para este ciclo
-            if(!custosDesteCiclo[fila]) custosDesteCiclo[fila] = 0;
-            custosDesteCiclo[fila] += custo;
+      // Inicializa estrutura se não existir
+      if (!dadosFinanceiros[fila]) dadosFinanceiros[fila] = { fixo: 0, celular: 0 };
+      
+      // Incrementa conforme o tipo
+      if (tipo === 'FIXO') dadosFinanceiros[fila].fixo += custo;
+      else dadosFinanceiros[fila].celular += custo;
+    });
 
-            // Salva registro da chamada ativa
-            batchUpdates[`chamadas_ativas/${c.uuid}`] = {
-                numero: c.caller_number,
-                fila: fila,
-                duracao: c.duration_formatted,
-                custo_estimado: custo,
-                tipo: tipo,
-                timestamp: Date.now()
-            };
-        });
+    // Salva no Firebase
+    await db.ref('financeiro/filas').set(dadosFinanceiros);
+    status.innerText = `ÚLTIMA SYNC: ${new Date().toLocaleTimeString()}`;
+    status.style.color = "var(--green)";
+    log("Processamento concluído com sucesso.");
 
-        // 2. Incrementa custos acumulados no Firebase
-        for (const [fila, valor] of Object.entries(custosDesteCiclo)) {
-            const saldoAnterior = historicoFilas[fila] || 0;
-            batchUpdates[`financeiro/custos_por_fila/${fila}`] = saldoAnterior + valor;
-        }
-
-        await db.ref().update(batchUpdates);
-        
-        renderTable(calls);
-        status.style.background = '#00ff9d';
-        status.textContent = `SYNC OK: ${new Date().toLocaleTimeString()}`;
-        log(`Sucesso: ${calls.length} chamadas bilhetadas em ${Object.keys(custosDesteCiclo).length} filas.`, 'ok');
-
-    } catch (e) {
-        status.style.background = '#ff4560';
-        status.textContent = "ERRO API";
-        log("Erro de conexão: " + e.message, 'err');
-    }
+  } catch (err) {
+    status.innerText = "ERRO NA API (FETCH FAILED)";
+    status.style.color = "var(--red)";
+    log("Erro no fetch: " + err.message);
+  }
 }
 
-function renderProjectCards() {
-    const grid = document.getElementById('projectGrid');
-    grid.innerHTML = Object.entries(historicoFilas).map(([nome, valor]) => `
-        <div class="project-card">
-            <div class="p-name">${nome}</div>
-            <div class="p-stat"><span>Gasto Acumulado:</span> <span class="p-val">R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+function atualizarVisual() {
+  const container = document.getElementById('gridFilas');
+  container.innerHTML = Object.entries(dadosFinanceiros).map(([nome, valores]) => {
+    const total = (valores.fixo || 0) + (valores.celular || 0);
+    return `
+      <div class="card-fila">
+        <h2>${nome}</h2>
+        <div class="item-custo">
+          <span class="label-fixo">Total Fixo:</span>
+          <span>R$ ${(valores.fixo || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
         </div>
-    `).join('');
-}
-
-function renderTable(calls) {
-    const table = document.getElementById('callsTable');
-    table.innerHTML = calls.map(c => `
-        <div class="row">
-            <div style="font-family:'JetBrains Mono'">${c.duration_formatted}</div>
-            <div style="font-weight:700">${c.caller_number}</div>
-            <div style="font-size:10px; color:${isCelular(c.caller_number)?'#00ff9d':'#00d4ff'}">${isCelular(c.caller_number)?'MÓVEL':'FIXO'}</div>
-            <div style="color:var(--amber)">${c.agent_info?.agent_name || 'Fila Geral'}</div>
-            <div style="font-size:11px">${c.state}</div>
+        <div class="item-custo">
+          <span class="label-celular">Total Celular:</span>
+          <span>R$ ${(valores.celular || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span>
         </div>
-    `).join('');
+        <div class="item-custo total-fila">
+          <span>TOTAL GERAL:</span>
+          <span style="color:var(--cyan)">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function log(msg, type) {
-    const b = document.getElementById('logBody');
-    b.innerHTML = `<div style="color:${type==='err'?'#ff4560':'#00ff9d'}">[${new Date().toLocaleTimeString()}] ${msg}</div>` + b.innerHTML;
+function log(msg) {
+  const b = document.getElementById('logBody');
+  b.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + b.innerHTML;
 }
 
-// Ciclo de 5 Minutos (300.000ms)
-setInterval(processarBilhetagem, 300000);
-processarBilhetagem();
+// Ciclo de 5 minutos
+setInterval(rodarCiclo, 300000);
+rodarCiclo();
 </script>
 </body>
 </html>
