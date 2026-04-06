@@ -18,25 +18,25 @@
   .btn-cdr { 
     background: #16213e; border: 1px solid var(--green); color: var(--green); 
     padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold;
-    text-transform: uppercase; margin-bottom: 30px;
+    text-transform: uppercase; margin-bottom: 30px; transition: 0.3s;
   }
-  .btn-cdr:hover { background: var(--green); color: #000; }
+  .btn-cdr:hover { background: var(--green); color: #000; box-shadow: 0 0 10px var(--green); }
 
   .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-top: 4px solid var(--cyan); }
-  .card-fila h2 { margin: 0 0 10px 0; color: var(--cyan); font-size: 14px; font-family: 'JetBrains Mono'; }
-  .entrevistador-tag { font-size: 11px; color: #5c7a9d; margin-bottom: 15px; display: block; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-left: 5px solid var(--cyan); position: relative; }
+  .card-fila h2 { margin: 0 0 5px 0; color: var(--cyan); font-size: 14px; font-family: 'JetBrains Mono'; word-break: break-all; }
+  .op-label { font-size: 10px; color: #5c7a9d; text-transform: uppercase; margin-bottom: 15px; display: block; }
   
-  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono'; font-size: 14px; }
-  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 20px; color: #fff; font-weight: 700; }
-  .status-bar { position: fixed; bottom: 0; width: 100%; background: #000; font-size: 10px; padding: 5px 20px; }
+  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono'; font-size: 13px; }
+  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 18px; color: #fff; font-weight: 700; }
+  .status-bar { position: fixed; bottom: 0; left:0; width: 100%; background: #000; font-size: 10px; padding: 5px 20px; display: flex; justify-content: space-between; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
 
 <div class="header-meta">
-  <h1 style="margin:0; font-size: 24px;">AE<span style="color:var(--cyan)">telecom</span> <small style="font-size:12px; color:var(--green)">· Bilhetador GFS</small></h1>
-  <div id="lastSync" style="font-size: 12px; color: #5c7a9d;">---</div>
+  <h1 style="margin:0; font-size: 24px;">AE<span style="color:var(--cyan)">telecom</span> <small style="font-size:12px; color:var(--green)">· Bilhetagem GFS</small></h1>
+  <div id="lastSync" style="font-size: 12px; color: #5c7a9d;">Aguardando...</div>
 </div>
 
 <div class="resumo-geral">
@@ -45,12 +45,17 @@
   <div class="box-total"><span>Total Geral</span><br><b id="geral-total" style="color:var(--cyan)">R$ 0,00</b></div>
 </div>
 
-<button class="btn-cdr" onclick="exportarCDR()">⬇ Extrair CDR AEtelecom (CSV)</button>
+<button class="btn-cdr" onclick="exportarCDR()">⬇ Extrair Relatório CDR (AEtelecom)</button>
 
 <div class="grid-filas" id="gridFilas"></div>
-<div class="status-bar" id="apiStatus">CONECTANDO...</div>
+
+<div class="status-bar">
+  <div id="apiStatus">STATUS: INICIANDO...</div>
+  <div>OPERADORA: AETELECOM</div>
+</div>
 
 <script>
+// Configuração Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
@@ -65,35 +70,36 @@ const proxies = [
   (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`
 ];
 
-const PRECO_FIXO = 0.028; //
-const PRECO_CEL = 0.030;  //
+const TARIFAS = { FIXO: 0.028, CEL: 0.030 }; //
 
 let dadosFilas = {};
-let chamadasParaCDR = [];
+let chamadasLogadas = [];
 
-db.ref('financeiro/filas').on('value', snap => {
+// Escuta em tempo real
+db.ref('financeiro/filas_v4').on('value', snap => {
   dadosFilas = snap.val() || {};
   renderizar();
 });
 
-// NOVA LÓGICA DE IDENTIFICAÇÃO
-function separarFilaEEntrevistador(raw) {
-  if (!raw || raw === "Agente não identificado") return { fila: "Fila Geral", entrevistador: "Sistema" };
-  
-  // Divide no ';' primeiro para tirar o ID
-  const base = raw.split(';')[0];
-  
-  // No print, o padrão parece ser "CÓDIGO_FILA-NOME_ENTREVISTADOR"
-  // Vamos tentar separar pelo primeiro "-" que encontrar
+// LÓGICA DE EXTRAÇÃO BASEADA NO PRINT
+function processarAgente(raw) {
+  if (!raw || raw.includes("não identificado")) {
+    return { fila: "PROJETO_DESCONHECIDO", entrevistador: "SISTEMA" };
+  }
+
+  // 1. Remove o ID final (depois do ;)
+  let base = raw.split(';')[0].trim();
+
+  // 2. Separa FILA de ENTREVISTADOR usando o '-'
   if (base.includes('-')) {
-    const partes = base.split('-');
+    let partes = base.split('-');
     return {
-      fila: partes[0].trim(),           // Tudo antes do '-' é a FILA
-      entrevistador: partes[1].trim()    // Tudo depois é o ENTREVISTADOR
+      fila: partes[0].trim(),           // EX: 20743brkmaranhaoabril
+      entrevistador: partes[1].trim()    // EX: KAIO_VINICIUS
     };
   }
-  
-  return { fila: base.trim(), entrevistador: "Não identificado" };
+
+  return { fila: base, entrevistador: "OPERADOR" };
 }
 
 function isCelular(num) {
@@ -104,81 +110,92 @@ function isCelular(num) {
 async function rodarCiclo() {
   const statusEl = document.getElementById('apiStatus');
   try {
-    let data;
+    let response;
+    // Tenta proxies em sequência para evitar erro 404
     try {
-      const res = await fetch(proxies[0](API_URL));
-      data = await res.json();
+      response = await fetch(proxies[0](API_URL));
     } catch {
-      const res2 = await fetch(proxies[1](API_URL));
-      data = await res2.json();
+      response = await fetch(proxies[1](API_URL));
     }
-
+    
+    const data = await response.json();
     const calls = data.calls || [];
-    chamadasParaCDR = [];
-
+    
     calls.forEach(c => {
-      const info = separarFilaEEntrevistador(c.agent_info?.agent_name);
-      const tipo = isCelular(c.caller_number) ? 'celular' : 'fixo';
+      const info = processarAgente(c.agent_info?.agent_name);
+      const tipo = isCelular(c.caller_number) ? 'CEL' : 'FIXO';
       const minutos = (parseInt(c.duration) || 0) / 60;
-      const custo = minutos * (tipo === 'celular' ? PRECO_CEL : PRECO_FIXO);
+      const custo = minutos * (tipo === 'CEL' ? TARIFAS.CEL : TARIFAS.FIXO);
 
-      // Agrupa no Firebase pela FILA (para cobrança)
-      if (!dadosFilas[info.fila]) dadosFilas[info.fila] = { fixo: 0, celular: 0, ultimoEntrevistador: "" };
-      dadosFilas[info.fila][tipo] += custo;
-      dadosFilas[info.fila].ultimoEntrevistador = info.entrevistador;
+      // Atualiza acumulado por FILA para cobrança
+      if (!dadosFilas[info.fila]) {
+        dadosFilas[info.fila] = { fixo: 0, cel: 0, entrevistadores: {} };
+      }
+      
+      if (tipo === 'CEL') dadosFilas[info.fila].cel += custo;
+      else dadosFilas[info.fila].fixo += custo;
 
-      chamadasParaCDR.push({
+      // Guarda último entrevistador ativo na fila
+      dadosFilas[info.fila].ultimo = info.entrevistador;
+
+      // Prepara dado para o CSV
+      chamadasLogadas.push({
         operadora: "AEtelecom",
         fila: info.fila,
         entrevistador: info.entrevistador,
-        destino: c.caller_number,
-        tipo: tipo.toUpperCase(),
+        numero: c.caller_number,
+        tipo: tipo,
         valor: custo.toFixed(4)
       });
     });
 
-    await db.ref('financeiro/filas').set(dadosFilas);
-    statusEl.innerText = "● API SINCRONIZADA";
-    document.getElementById('lastSync').innerText = "Sync: " + new Date().toLocaleTimeString();
+    await db.ref('financeiro/filas_v4').set(dadosFilas);
+    statusEl.innerText = "● CONEXÃO AEtelecom OK";
+    document.getElementById('lastSync').innerText = "Última Sync: " + new Date().toLocaleTimeString();
+
   } catch (err) {
-    statusEl.innerText = "○ ERRO DE CONEXÃO";
+    statusEl.innerText = "○ ERRO NA API (VERIFICAR PROXY)";
   }
 }
 
 function renderizar() {
   const container = document.getElementById('gridFilas');
-  let gFixo = 0, gCel = 0;
+  let tFixo = 0, tCel = 0;
 
-  container.innerHTML = Object.entries(dadosFilas).map(([filaNome, val]) => {
-    const total = (val.fixo || 0) + (val.celular || 0);
-    gFixo += (val.fixo || 0); gCel += (val.celular || 0);
+  container.innerHTML = Object.entries(dadosFilas).map(([idFila, v]) => {
+    const subtotal = (v.fixo || 0) + (v.cel || 0);
+    tFixo += v.fixo; tCel += v.cel;
+
     return `
       <div class="card-fila">
-        <h2>PROJETO: ${filaNome}</h2>
-        <span class="entrevistador-tag">Último Operador: ${val.ultimoEntrevistador || '---'}</span>
-        <div class="item-custo"><span>Fixo:</span><span style="color:var(--amber)">R$ ${val.fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
-        <div class="item-custo"><span>Celular:</span><span style="color:var(--green)">R$ ${val.celular.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
-        <div class="total-fila"><span>TOTAL FILA:</span><span style="color:var(--cyan)">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
+        <h2>${idFila}</h2>
+        <span class="op-label">Atividade: ${v.ultimo || 'Inativa'}</span>
+        <div class="item-custo"><span>Custos Fixos:</span><span style="color:var(--amber)">R$ ${v.fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        <div class="item-custo"><span>Custos Celular:</span><span style="color:var(--green)">R$ ${v.cel.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        <div class="total-fila"><span>SUBTOTAL:</span><span style="color:var(--cyan)">R$ ${subtotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
       </div>
     `;
   }).join('');
 
-  document.getElementById('geral-fixo').innerText = `R$ ${gFixo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-  document.getElementById('geral-cel').innerText = `R$ ${gCel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-  document.getElementById('geral-total').innerText = `R$ ${(gFixo + gCel).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('geral-fixo').innerText = `R$ ${tFixo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('geral-cel').innerText = `R$ ${tCel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('geral-total').innerText = `R$ ${(tFixo + tCel).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
 }
 
 function exportarCDR() {
-  if (chamadasParaCDR.length === 0) return alert("Aguarde o processamento...");
-  let csv = "Operadora;Fila;Entrevistador;Destino;Tipo;Valor\n";
-  chamadasParaCDR.forEach(r => csv += `${r.operadora};${r.fila};${r.entrevistador};${r.destino};${r.tipo};${r.valor}\n`);
-  const blob = new Blob([csv], { type: 'text/csv' });
+  if (chamadasLogadas.length === 0) return alert("Aguarde a coleta de dados...");
+  let csv = "\uFEFFOperadora;Fila;Entrevistador;Destino;Tipo;Valor(R$)\n";
+  chamadasLogadas.forEach(r => {
+    csv += `${r.operadora};${r.fila};${r.entrevistador};${r.numero};${r.tipo};${r.valor}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `CDR_AEtelecom_${Date.now()}.csv`;
+  a.download = `CDR_AEtelecom_GFS_${Date.now()}.csv`;
   a.click();
 }
 
+// Ciclo de 5 min conforme painel
 setInterval(rodarCiclo, 300000);
 rodarCiclo();
 </script>
