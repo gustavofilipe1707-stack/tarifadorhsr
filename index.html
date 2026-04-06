@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>AEtelecom · Bilhetador GFS</title>
+<title>AEtelecom · Tarifador HSR</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -10,52 +10,44 @@
   :root { --bg: #050810; --card: #0d1321; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; }
   body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding: 20px; }
   
-  .header-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-  .resumo-geral { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px; }
-  .box-total { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 10px; text-align: center; }
-  .box-total b { font-family: 'JetBrains Mono'; font-size: 26px; color: #fff; }
+  .header-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--cyan); padding-bottom: 10px; margin-bottom: 20px; }
+  .resumo-geral { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+  .box-total { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; text-align: center; }
+  .box-total b { font-family: 'JetBrains Mono'; font-size: 24px; color: #fff; }
 
-  .btn-cdr { 
-    background: #16213e; border: 1px solid var(--green); color: var(--green); 
-    padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold;
-    text-transform: uppercase; margin-bottom: 30px; transition: 0.3s;
-  }
-  .btn-cdr:hover { background: var(--green); color: #000; box-shadow: 0 0 10px var(--green); }
+  .btn-cdr { background: #16213e; border: 1px solid var(--green); color: var(--green); padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
 
-  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-left: 5px solid var(--cyan); position: relative; }
-  .card-fila h2 { margin: 0 0 5px 0; color: var(--cyan); font-size: 14px; font-family: 'JetBrains Mono'; word-break: break-all; }
-  .op-label { font-size: 10px; color: #5c7a9d; text-transform: uppercase; margin-bottom: 15px; display: block; }
+  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; position: relative; overflow: hidden; }
+  .card-fila::before { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--cyan); }
+  .card-fila h2 { margin: 0 0 10px 0; font-size: 14px; color: var(--cyan); font-family: 'JetBrains Mono'; }
   
-  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono'; font-size: 13px; }
-  .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 18px; color: #fff; font-weight: 700; }
-  .status-bar { position: fixed; bottom: 0; left:0; width: 100%; background: #000; font-size: 10px; padding: 5px 20px; display: flex; justify-content: space-between; border-top: 1px solid var(--border); }
+  .item-custo { display: flex; justify-content: space-between; margin: 5px 0; font-family: 'JetBrains Mono'; font-size: 13px; }
+  .total-fila { margin-top: 15px; padding-top: 8px; border-top: 1px dashed #3d5470; font-size: 18px; font-weight: bold; color: #fff; }
+  
+  .status-log { background: #000; padding: 10px; border: 1px solid var(--border); font-family: 'JetBrains Mono'; font-size: 11px; max-height: 150px; overflow-y: auto; margin-top: 20px; color: #5c7a9d; }
 </style>
 </head>
 <body>
 
 <div class="header-meta">
-  <h1 style="margin:0; font-size: 24px;">AE<span style="color:var(--cyan)">telecom</span> <small style="font-size:12px; color:var(--green)">· Bilhetagem GFS</small></h1>
-  <div id="lastSync" style="font-size: 12px; color: #5c7a9d;">Aguardando...</div>
+  <h1 style="margin:0;">TARIFADOR <span style="color:var(--cyan)">HSR</span></h1>
+  <div style="text-align:right"><small>OPERADORA: <b>AETELECOM</b></small></div>
 </div>
 
 <div class="resumo-geral">
-  <div class="box-total"><span>Fixo (0.028)</span><br><b id="geral-fixo" style="color:var(--amber)">R$ 0,00</b></div>
-  <div class="box-total"><span>Celular (0.03)</span><br><b id="geral-cel" style="color:var(--green)">R$ 0,00</b></div>
-  <div class="box-total"><span>Total Geral</span><br><b id="geral-total" style="color:var(--cyan)">R$ 0,00</b></div>
+  <div class="box-total"><span>FIXO GERAL</span><br><b id="g-fixo" style="color:var(--amber)">R$ 0,00</b></div>
+  <div class="box-total"><span>CELULAR GERAL</span><br><b id="g-cel" style="color:var(--green)">R$ 0,00</b></div>
+  <div class="box-total"><span>TOTAL ACUMULADO</span><br><b id="g-total" style="color:var(--cyan)">R$ 0,00</b></div>
 </div>
 
-<button class="btn-cdr" onclick="exportarCDR()">⬇ Extrair Relatório CDR (AEtelecom)</button>
+<button class="btn-cdr" onclick="exportarCDR()">EXTRAIR CDR (AETELECOM)</button>
 
 <div class="grid-filas" id="gridFilas"></div>
 
-<div class="status-bar">
-  <div id="apiStatus">STATUS: INICIANDO...</div>
-  <div>OPERADORA: AETELECOM</div>
-</div>
+<div class="status-log" id="logSistema">[SISTEMA] Iniciando bilhetagem HSR...</div>
 
 <script>
-// Configuração Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
@@ -65,139 +57,122 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
-const proxies = [
-  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`,
-  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`
-];
+const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
 
-const TARIFAS = { FIXO: 0.028, CEL: 0.030 }; //
+const PRECOS = { FIXO: 0.028, CEL: 0.030 }; //
+let dbLocal = {}; 
+let cdrParaExportar = [];
 
-let dadosFilas = {};
-let chamadasLogadas = [];
-
-// Escuta em tempo real
-db.ref('financeiro/filas_v4').on('value', snap => {
-  dadosFilas = snap.val() || {};
+// Carregar dados existentes para não zerar
+db.ref('tarifador_hsr_v5').on('value', snap => {
+  dbLocal = snap.val() || {};
   renderizar();
 });
 
-// LÓGICA DE EXTRAÇÃO BASEADA NO PRINT
-function processarAgente(raw) {
-  if (!raw || raw.includes("não identificado")) {
-    return { fila: "PROJETO_DESCONHECIDO", entrevistador: "SISTEMA" };
-  }
-
-  // 1. Remove o ID final (depois do ;)
-  let base = raw.split(';')[0].trim();
-
-  // 2. Separa FILA de ENTREVISTADOR usando o '-'
-  if (base.includes('-')) {
-    let partes = base.split('-');
-    return {
-      fila: partes[0].trim(),           // EX: 20743brkmaranhaoabril
-      entrevistador: partes[1].trim()    // EX: KAIO_VINICIUS
-    };
-  }
-
-  return { fila: base, entrevistador: "OPERADOR" };
+function log(msg, erro = false) {
+  const el = document.getElementById('logSistema');
+  const cor = erro ? '#ff4560' : '#00ff9d';
+  el.innerHTML += `<div style="color:${cor}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
 }
 
-function isCelular(num) {
+function identificarFilaEEntrevistador(agentName) {
+  if (!agentName || agentName.includes("não identificado")) return { fila: "OUTROS", op: "SISTEMA" };
+  
+  // Limpa o ID após o ponto e vírgula
+  let limpo = agentName.split(';')[0];
+  
+  // A FILA é o que vem antes do primeiro "-"
+  if (limpo.includes('-')) {
+    let partes = limpo.split('-');
+    return { fila: partes[0].trim(), op: partes[1].trim() };
+  }
+  return { fila: limpo.trim(), op: "OPERADOR" };
+}
+
+function ehCelular(num) {
   const n = String(num).replace(/\D/g, '');
   return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
 }
 
-async function rodarCiclo() {
-  const statusEl = document.getElementById('apiStatus');
+async function tarifar() {
   try {
-    let response;
-    // Tenta proxies em sequência para evitar erro 404
-    try {
-      response = await fetch(proxies[0](API_URL));
-    } catch {
-      response = await fetch(proxies[1](API_URL));
-    }
-    
-    const data = await response.json();
+    const res = await fetch(proxy(API_URL));
+    const data = await res.json();
     const calls = data.calls || [];
     
+    if (calls.length === 0) {
+      log("Monitorando... Nenhuma chamada ativa no momento.");
+      return;
+    }
+
     calls.forEach(c => {
-      const info = processarAgente(c.agent_info?.agent_name);
-      const tipo = isCelular(c.caller_number) ? 'CEL' : 'FIXO';
-      const minutos = (parseInt(c.duration) || 0) / 60;
-      const custo = minutos * (tipo === 'CEL' ? TARIFAS.CEL : TARIFAS.FIXO);
+      const info = identificarFilaEEntrevistador(c.agent_info?.agent_name);
+      const tipo = ehCelular(c.caller_number) ? 'CEL' : 'FIXO';
+      const min = (parseInt(c.duration) || 0) / 60;
+      const custo = min * (tipo === 'CEL' ? PRECOS.CEL : PRECOS.FIXO);
 
-      // Atualiza acumulado por FILA para cobrança
-      if (!dadosFilas[info.fila]) {
-        dadosFilas[info.fila] = { fixo: 0, cel: 0, entrevistadores: {} };
-      }
+      // SOMA AO ACUMULADO (Sem zerar)
+      if (!dbLocal[info.fila]) dbLocal[info.fila] = { fixo: 0, cel: 0 };
       
-      if (tipo === 'CEL') dadosFilas[info.fila].cel += custo;
-      else dadosFilas[info.fila].fixo += custo;
+      if (tipo === 'CEL') dbLocal[info.fila].cel += custo;
+      else dbLocal[info.fila].fixo += custo;
 
-      // Guarda último entrevistador ativo na fila
-      dadosFilas[info.fila].ultimo = info.entrevistador;
-
-      // Prepara dado para o CSV
-      chamadasLogadas.push({
-        operadora: "AEtelecom",
+      cdrParaExportar.push({
+        op: "AEtelecom",
         fila: info.fila,
-        entrevistador: info.entrevistador,
-        numero: c.caller_number,
+        entrevistador: info.op,
+        destino: c.caller_number,
         tipo: tipo,
         valor: custo.toFixed(4)
       });
     });
 
-    await db.ref('financeiro/filas_v4').set(dadosFilas);
-    statusEl.innerText = "● CONEXÃO AEtelecom OK";
-    document.getElementById('lastSync').innerText = "Última Sync: " + new Date().toLocaleTimeString();
+    // Salva no Firebase para persistência
+    await db.ref('tarifador_hsr_v5').set(dbLocal);
+    log(`Tarifado com sucesso: ${calls.length} chamadas processadas.`);
 
-  } catch (err) {
-    statusEl.innerText = "○ ERRO NA API (VERIFICAR PROXY)";
+  } catch (e) {
+    log("Erro ao acessar API ou JSON inválido.", true); //
   }
 }
 
 function renderizar() {
-  const container = document.getElementById('gridFilas');
-  let tFixo = 0, tCel = 0;
+  const grid = document.getElementById('gridFilas');
+  let tF = 0, tC = 0;
 
-  container.innerHTML = Object.entries(dadosFilas).map(([idFila, v]) => {
-    const subtotal = (v.fixo || 0) + (v.cel || 0);
-    tFixo += v.fixo; tCel += v.cel;
-
+  grid.innerHTML = Object.entries(dbLocal).map(([nome, v]) => {
+    const sub = (v.fixo || 0) + (v.cel || 0);
+    tF += v.fixo; tC += v.cel;
     return `
       <div class="card-fila">
-        <h2>${idFila}</h2>
-        <span class="op-label">Atividade: ${v.ultimo || 'Inativa'}</span>
-        <div class="item-custo"><span>Custos Fixos:</span><span style="color:var(--amber)">R$ ${v.fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
-        <div class="item-custo"><span>Custos Celular:</span><span style="color:var(--green)">R$ ${v.cel.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
-        <div class="total-fila"><span>SUBTOTAL:</span><span style="color:var(--cyan)">R$ ${subtotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
+        <h2>FILA: ${nome}</h2>
+        <div class="item-custo"><span>FIXO:</span><span style="color:var(--amber)">R$ ${v.fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        <div class="item-custo"><span>CELULAR:</span><span style="color:var(--green)">R$ ${v.cel.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        <div class="total-fila">TOTAL: R$ ${sub.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
       </div>
     `;
   }).join('');
 
-  document.getElementById('geral-fixo').innerText = `R$ ${tFixo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-  document.getElementById('geral-cel').innerText = `R$ ${tCel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-  document.getElementById('geral-total').innerText = `R$ ${(tFixo + tCel).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('g-fixo').innerText = `R$ ${tF.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('g-cel').innerText = `R$ ${tC.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('g-total').innerText = `R$ ${(tF + tC).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
 }
 
 function exportarCDR() {
-  if (chamadasLogadas.length === 0) return alert("Aguarde a coleta de dados...");
-  let csv = "\uFEFFOperadora;Fila;Entrevistador;Destino;Tipo;Valor(R$)\n";
-  chamadasLogadas.forEach(r => {
-    csv += `${r.operadora};${r.fila};${r.entrevistador};${r.numero};${r.tipo};${r.valor}\n`;
-  });
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  if (cdrParaExportar.length === 0) return alert("Sem dados de chamadas recentes.");
+  let csv = "Operadora;Fila;Entrevistador;Destino;Tipo;Valor\n";
+  cdrParaExportar.forEach(r => csv += `AEtelecom;${r.fila};${r.entrevistador};${r.destino};${r.tipo};${r.valor}\n`);
+  const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `CDR_AEtelecom_GFS_${Date.now()}.csv`;
+  a.download = `CDR_AETELECOM_HSR.csv`;
   a.click();
 }
 
-// Ciclo de 5 min conforme painel
-setInterval(rodarCiclo, 300000);
-rodarCiclo();
+// Ciclo de 5 min para bater com o log da imagem
+setInterval(tarifar, 300000);
+tarifar();
 </script>
 </body>
 </html>
