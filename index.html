@@ -3,233 +3,198 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FastDialer · Bilhetador Cloud</title>
+<title>FastDialer · Bilhetador por Fila</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
 
 :root {
-  --bg:        #070b14;
-  --bg2:       #0c1220;
-  --bg3:       #111827;
-  --border:    #1e2d45;
-  --border2:   #243550;
-  --cyan:      #00d4ff;
-  --cyan-dim:  #00d4ff22;
-  --cyan-mid:  #00d4ff55;
-  --green:     #00ff9d;
-  --green-dim: #00ff9d18;
-  --amber:     #ffb800;
-  --amber-dim: #ffb80018;
-  --red:       #ff4560;
-  --red-dim:   #ff456018;
-  --purple:    #a855f7;
-  --purple-dim:#a855f715;
-  --text:      #c8d8ee;
-  --text2:     #6b8aaa;
-  --text3:     #3d5470;
+  --bg: #070b14; --bg2: #0c1220; --border: #1e2d45;
+  --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding-bottom: 50px; }
 
-html, body {
-  height: 100%;
-  font-family: 'Rajdhani', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  overflow-x: hidden;
+/* Dashboard de Filas */
+.project-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px; padding: 20px;
+}
+.project-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 15px;
+  position: relative; overflow: hidden;
+}
+.project-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan);
+}
+.p-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px; text-transform: uppercase; }
+.p-stat { display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 13px; margin-top: 5px; }
+.p-val { color: var(--green); font-weight: 700; }
+
+/* Tabela Principal */
+.main-container { padding: 0 20px; }
+.table-header { 
+  display: grid; grid-template-columns: 120px 1fr 100px 120px 150px; 
+  background: var(--border); padding: 10px; border-radius: 5px 5px 0 0;
+  font-size: 12px; font-weight: 700; color: var(--cyan);
+}
+.row { 
+  display: grid; grid-template-columns: 120px 1fr 100px 120px 150px; 
+  background: var(--bg2); padding: 12px; border-bottom: 1px solid var(--border);
+  align-items: center; font-size: 14px;
 }
 
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,.015) 2px, rgba(0,212,255,.015) 4px);
+.log-panel { 
+  margin: 20px; background: #000; padding: 15px; border-radius: 8px;
+  font-family: 'JetBrains Mono'; font-size: 11px; height: 120px; overflow-y: auto;
 }
-
-.shell { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
-
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 28px; height: 60px;
-  background: rgba(7,11,20,.92); border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100;
+.sync-badge { 
+  position: fixed; top: 15px; right: 20px; padding: 5px 15px; 
+  background: var(--green); color: #000; border-radius: 20px; font-weight: 700; font-size: 12px;
 }
-
-.brand { display: flex; align-items: center; gap: 14px; }
-.brand-logo {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--cyan), var(--purple));
-  border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  font-size: 18px; font-weight: 700; color: #fff;
-  box-shadow: 0 0 16px var(--cyan-mid); font-family: 'JetBrains Mono', monospace;
-}
-.brand-name { font-size: 22px; font-weight: 700; letter-spacing: 2px; color: #fff; text-transform: uppercase; }
-.brand-name span { color: var(--cyan); }
-
-.status-pill {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 14px; border-radius: 20px;
-  border: 1px solid var(--border2); font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  color: var(--text2);
-}
-.status-pill.live { border-color: var(--green); color: var(--green); background: var(--green-dim); }
-.status-pill.error { border-color: var(--red); color: var(--red); background: var(--red-dim); }
-
-.pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.status-pill.live .pulse { animation: pulseBlink 1.4s ease-in-out infinite; }
-@keyframes pulseBlink { 0%,100% { opacity: 1; box-shadow: 0 0 6px currentColor; } 50% { opacity: .3; box-shadow: none; } }
-
-.kpi-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
-.kpi { background: var(--bg2); padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; }
-.kpi-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; }
-.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: var(--cyan); }
-
-.content { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
-.table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex: 1; }
-.table-head { display: grid; grid-template-columns: 180px 1fr 110px 110px 80px 110px 100px; padding: 10px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); }
-.th { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3); text-transform: uppercase; }
-.calls-list { min-height: 200px; max-height: calc(100vh - 400px); overflow-y: auto; }
-.call-row { display: grid; grid-template-columns: 180px 1fr 110px 110px 80px 110px 100px; padding: 13px 16px; border-bottom: 1px solid var(--border); align-items: center; font-size: 13px; }
-
-.log-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-top: 10px; }
-.log-header { padding: 8px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
-.log-body { padding: 10px 16px; max-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-
-.sync-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; }
-.sync-bar.syncing { background: linear-gradient(90deg, var(--cyan), var(--purple), var(--cyan)); background-size: 200% 100%; animation: scanBar 1s linear infinite; }
-@keyframes scanBar { to { background-position: -200% 0; } }
 </style>
 </head>
 <body>
-<div class="sync-bar" id="syncBar"></div>
-<div class="shell">
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-logo">FD</div>
-      <div>
-        <div class="brand-name">Fast<span>Dialer</span></div>
-        <div class="brand-sub">Bilhetador Cloud · Integrador RTDB</div>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <div class="status-pill" id="apiStatus"><div class="pulse"></div><span id="apiStatusText">A GUARDAR DADOS</span></div>
-      <div class="status-pill" id="fbStatus"><div class="pulse"></div><span id="fbStatusText">FIREBASE</span></div>
-    </div>
-  </header>
 
-  <section class="kpi-bar">
-    <div class="kpi"><div class="kpi-label">Ativas</div><div class="kpi-value" id="kpi-total">0</div></div>
-    <div class="kpi"><div class="kpi-label">Móvel</div><div class="kpi-value" id="kpi-movel">0</div></div>
-    <div class="kpi"><div class="kpi-label">Fixo</div><div class="kpi-value" id="kpi-fixo">0</div></div>
-    <div class="kpi"><div class="kpi-label">Entrantes</div><div class="kpi-value" id="kpi-in">0</div></div>
-    <div class="kpi"><div class="kpi-label">Saintes</div><div class="kpi-value" id="kpi-out">0</div></div>
-  </section>
+<div class="sync-badge" id="syncStatus">AGUARDANDO...</div>
 
-  <main class="content">
-    <div class="table-wrap">
-      <div class="table-head">
-        <div class="th">UUID</div><div class="th">Número</div><div class="th">Duração</div><div class="th">Direção</div><div class="th">Status</div><div class="th">Agente</div><div class="th">Sync</div>
-      </div>
-      <div class="calls-list" id="callsList"></div>
+<header style="padding: 20px 20px 0 20px;">
+    <h1 style="margin:0; font-size: 24px; color: var(--cyan);">FAST<span style="color:#fff">DIALER</span> BILHETADOR</h1>
+    <p style="color: #3d5470; font-size: 12px; margin: 5px 0 0 0;">INTEGRADOR RTDB · CICLO 5 MINUTOS</p>
+</header>
+
+<div class="project-grid" id="projectGrid">
     </div>
-    <div class="log-panel">
-      <div class="log-header">LOG DO SISTEMA</div>
-      <div class="log-body" id="logBody"></div>
+
+<div class="main-container">
+    <div class="table-header">
+        <div>DURAÇÃO</div><div>NÚMERO</div><div>TIPO</div><div>FILA/PROJETO</div><div>STATUS</div>
     </div>
-  </main>
+    <div id="callsTable"></div>
 </div>
 
+<div class="log-panel" id="logBody"></div>
+
 <script>
+// CONFIG FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
-  projectId: "tarifadorhsr",
-  appId: "1:288717924509:web:459c4dc680712992654c74"
+  projectId: "tarifadorhsr"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// MUDANÇA PRINCIPAL: Usando AllOrigins para evitar o erro 404 do Heroku
+// CONFIG API & TARIFAS
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
-const PROXY_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_URL)}`;
+const PROXY = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_URL)}`;
+const TARIFAS = { CEL: 0.030, FIXO: 0.028 }; //
 
-let allCalls = [];
+let historicoFilas = {};
 
-function log(msg, level = 'info') {
-  const b = document.getElementById('logBody');
-  b.innerHTML += `<div class="log-line" style="color:${level==='err'?'#ff4560':'#00ff9d'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-  b.scrollTop = b.scrollHeight;
+// 1. Carrega custos acumulados do Firebase
+db.ref('financeiro/custos_por_fila').on('value', snap => {
+    historicoFilas = snap.val() || {};
+    renderProjectCards();
+});
+
+function isCelular(num) {
+    const clean = String(num).replace(/\D/g, '');
+    // Verifica se tem 10-11 dígitos e se o 3º dígito é 7, 8 ou 9
+    return clean.length >= 10 && ["7","8","9"].includes(clean.charAt(2));
 }
 
-async function fetchCalls() {
-  const bar = document.getElementById('syncBar');
-  const apiS = document.getElementById('apiStatus');
-  bar.classList.add('syncing');
+async function processarBilhetagem() {
+    const status = document.getElementById('syncStatus');
+    status.style.background = '#ffb800';
+    status.textContent = "PROCESSANDO...";
 
-  try {
-    const response = await fetch(`${PROXY_URL}&t=${Date.now()}`);
-    if (!response.ok) throw new Error(`Status ${response.status}`);
-    
-    const data = await response.json();
-    allCalls = data.calls || [];
+    try {
+        const res = await fetch(`${PROXY}&t=${Date.now()}`);
+        const data = await res.json();
+        const calls = data.calls || [];
+        
+        let batchUpdates = {};
+        let custosDesteCiclo = {};
 
-    apiS.className = 'status-pill live';
-    document.getElementById('apiStatusText').textContent = `LIVE: ${allCalls.length}`;
-    
-    const updates = {};
-    allCalls.forEach(c => {
-      updates[`chamadas_ativas/${c.uuid}`] = {
-        uuid: c.uuid,
-        numero: c.caller_number,
-        duracao: c.duration_formatted,
-        direcao: c.direction,
-        timestamp: Date.now()
-      };
-    });
+        calls.forEach(c => {
+            const fila = c.agent_info?.agent_name || "Fila Geral";
+            const tipo = isCelular(c.caller_number) ? 'CEL' : 'FIXO';
+            const tarifa = TARIFAS[tipo];
+            
+            // Cálculo: (segundos / 60) * tarifa
+            const minutos = (parseInt(c.duration) || 0) / 60;
+            const custo = minutos * tarifa;
 
-    if (Object.keys(updates).length > 0) {
-      await db.ref().update(updates);
+            // Acumula por fila para este ciclo
+            if(!custosDesteCiclo[fila]) custosDesteCiclo[fila] = 0;
+            custosDesteCiclo[fila] += custo;
+
+            // Salva registro da chamada ativa
+            batchUpdates[`chamadas_ativas/${c.uuid}`] = {
+                numero: c.caller_number,
+                fila: fila,
+                duracao: c.duration_formatted,
+                custo_estimado: custo,
+                tipo: tipo,
+                timestamp: Date.now()
+            };
+        });
+
+        // 2. Incrementa custos acumulados no Firebase
+        for (const [fila, valor] of Object.entries(custosDesteCiclo)) {
+            const saldoAnterior = historicoFilas[fila] || 0;
+            batchUpdates[`financeiro/custos_por_fila/${fila}`] = saldoAnterior + valor;
+        }
+
+        await db.ref().update(batchUpdates);
+        
+        renderTable(calls);
+        status.style.background = '#00ff9d';
+        status.textContent = `SYNC OK: ${new Date().toLocaleTimeString()}`;
+        log(`Sucesso: ${calls.length} chamadas bilhetadas em ${Object.keys(custosDesteCiclo).length} filas.`, 'ok');
+
+    } catch (e) {
+        status.style.background = '#ff4560';
+        status.textContent = "ERRO API";
+        log("Erro de conexão: " + e.message, 'err');
     }
-    
-    renderKPIs();
-    renderTable();
-    log(`Sincronizado: ${allCalls.length} chamadas.`, 'ok');
-
-  } catch (err) {
-    apiS.className = 'status-pill error';
-    document.getElementById('apiStatusText').textContent = 'ERRO API';
-    log(`Erro na API: ${err.message}`, 'err');
-  } finally {
-    bar.classList.remove('syncing');
-  }
 }
 
-function renderKPIs() {
-  document.getElementById('kpi-total').textContent = allCalls.length;
-  document.getElementById('kpi-in').textContent = allCalls.filter(c => c.direction.toLowerCase().includes('in')).length;
-  document.getElementById('kpi-out').textContent = allCalls.filter(c => c.direction.toLowerCase().includes('out')).length;
+function renderProjectCards() {
+    const grid = document.getElementById('projectGrid');
+    grid.innerHTML = Object.entries(historicoFilas).map(([nome, valor]) => `
+        <div class="project-card">
+            <div class="p-name">${nome}</div>
+            <div class="p-stat"><span>Gasto Acumulado:</span> <span class="p-val">R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
+        </div>
+    `).join('');
 }
 
-function renderTable() {
-  const container = document.getElementById('callsList');
-  container.innerHTML = allCalls.map(c => `
-    <div class="call-row">
-      <div>${c.uuid.substring(0,8)}</div>
-      <div>${c.caller_number}</div>
-      <div>${c.duration_formatted}</div>
-      <div>${c.direction}</div>
-      <div style="color:#00ff9d">${c.state}</div>
-      <div>${c.agent_info?.agent_name || 'Fila'}</div>
-      <div style="color:#00d4ff">✔</div>
-    </div>
-  `).join('');
+function renderTable(calls) {
+    const table = document.getElementById('callsTable');
+    table.innerHTML = calls.map(c => `
+        <div class="row">
+            <div style="font-family:'JetBrains Mono'">${c.duration_formatted}</div>
+            <div style="font-weight:700">${c.caller_number}</div>
+            <div style="font-size:10px; color:${isCelular(c.caller_number)?'#00ff9d':'#00d4ff'}">${isCelular(c.caller_number)?'MÓVEL':'FIXO'}</div>
+            <div style="color:var(--amber)">${c.agent_info?.agent_name || 'Fila Geral'}</div>
+            <div style="font-size:11px">${c.state}</div>
+        </div>
+    `).join('');
 }
 
-setInterval(fetchCalls, 5000);
-fetchCalls();
+function log(msg, type) {
+    const b = document.getElementById('logBody');
+    b.innerHTML = `<div style="color:${type==='err'?'#ff4560':'#00ff9d'}">[${new Date().toLocaleTimeString()}] ${msg}</div>` + b.innerHTML;
+}
+
+// Ciclo de 5 Minutos (300.000ms)
+setInterval(processarBilhetagem, 300000);
+processarBilhetagem();
 </script>
 </body>
 </html>
