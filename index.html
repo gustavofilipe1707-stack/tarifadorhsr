@@ -17,7 +17,6 @@
   --bg3:       #111827;
   --border:    #1e2d45;
   --border2:   #243550;
-
   --cyan:      #00d4ff;
   --cyan-dim:  #00d4ff22;
   --cyan-mid:  #00d4ff55;
@@ -29,7 +28,6 @@
   --red-dim:   #ff456018;
   --purple:    #a855f7;
   --purple-dim:#a855f715;
-
   --text:      #c8d8ee;
   --text2:     #6b8aaa;
   --text3:     #3d5470;
@@ -45,276 +43,62 @@ html, body {
   overflow-x: hidden;
 }
 
-/* ─── SCAN LINES overlay ─── */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,212,255,.015) 2px,
-    rgba(0,212,255,.015) 4px
-  );
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,.015) 2px, rgba(0,212,255,.015) 4px);
 }
 
-/* ─── GRID DOTS background ─── */
-body::after {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    radial-gradient(circle, rgba(0,212,255,.06) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
+.shell { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
 
-.shell {
-  position: relative; z-index: 1;
-  min-height: 100vh;
-  display: flex; flex-direction: column;
-}
-
-/* ─── TOP BAR ─── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 28px;
-  height: 60px;
-  background: rgba(7,11,20,.92);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  position: sticky; top: 0; z-index: 100;
+  padding: 0 28px; height: 60px;
+  background: rgba(7,11,20,.92); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100;
 }
 
-.brand {
-  display: flex; align-items: center; gap: 14px;
-}
+.brand { display: flex; align-items: center; gap: 14px; }
 .brand-logo {
   width: 36px; height: 36px;
   background: linear-gradient(135deg, var(--cyan), var(--purple));
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; font-weight: 700;
-  color: #fff;
-  box-shadow: 0 0 16px var(--cyan-mid);
-  font-family: 'JetBrains Mono', monospace;
-  flex-shrink: 0;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #fff;
+  box-shadow: 0 0 16px var(--cyan-mid); font-family: 'JetBrains Mono', monospace;
 }
-.brand-name {
-  font-size: 22px; font-weight: 700; letter-spacing: 2px;
-  color: #fff; text-transform: uppercase;
-}
+.brand-name { font-size: 22px; font-weight: 700; letter-spacing: 2px; color: #fff; text-transform: uppercase; }
 .brand-name span { color: var(--cyan); }
-.brand-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; color: var(--text3);
-  letter-spacing: 2px; text-transform: uppercase;
-  margin-top: 1px;
-}
-
-.topbar-right {
-  display: flex; align-items: center; gap: 20px;
-}
 
 .status-pill {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 14px; border-radius: 20px;
-  border: 1px solid var(--border2);
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  border: 1px solid var(--border2); font-family: 'JetBrains Mono', monospace; font-size: 11px;
   color: var(--text2);
-  transition: all .3s;
 }
 .status-pill.live { border-color: var(--green); color: var(--green); background: var(--green-dim); }
 .status-pill.error { border-color: var(--red); color: var(--red); background: var(--red-dim); }
-.status-pill.connecting { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
 
-.pulse {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: currentColor;
-}
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .status-pill.live .pulse { animation: pulseBlink 1.4s ease-in-out infinite; }
-@keyframes pulseBlink {
-  0%,100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
-  50% { opacity: .3; box-shadow: none; }
-}
+@keyframes pulseBlink { 0%,100% { opacity: 1; box-shadow: 0 0 6px currentColor; } 50% { opacity: .3; box-shadow: none; } }
 
-.clock {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px; color: var(--text2);
-  letter-spacing: 1px;
-}
+.kpi-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+.kpi { background: var(--bg2); padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; }
+.kpi-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; }
+.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: var(--cyan); }
 
-/* ─── KPI BAR ─── */
-.kpi-bar {
-  display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.kpi {
-  background: var(--bg2);
-  padding: 16px 20px;
-  display: flex; flex-direction: column; gap: 4px;
-  transition: background .2s;
-}
-.kpi:hover { background: var(--bg3); }
-.kpi-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; color: var(--text3);
-  letter-spacing: 2px; text-transform: uppercase;
-}
-.kpi-value {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 26px; font-weight: 700;
-  line-height: 1;
-  transition: color .3s;
-}
-.kpi-sub { font-size: 11px; color: var(--text3); }
-.kpi.k-cyan .kpi-value { color: var(--cyan); text-shadow: 0 0 20px var(--cyan-mid); }
-.kpi.k-green .kpi-value { color: var(--green); text-shadow: 0 0 20px #00ff9d44; }
-.kpi.k-amber .kpi-value { color: var(--amber); text-shadow: 0 0 20px #ffb80044; }
-.kpi.k-red .kpi-value { color: var(--red); }
-.kpi.k-purple .kpi-value { color: var(--purple); }
+.content { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+.table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex: 1; }
+.table-head { display: grid; grid-template-columns: 180px 1fr 110px 110px 80px 110px 100px; padding: 10px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); }
+.th { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3); text-transform: uppercase; }
+.calls-list { min-height: 200px; max-height: calc(100vh - 400px); overflow-y: auto; }
+.call-row { display: grid; grid-template-columns: 180px 1fr 110px 110px 80px 110px 100px; padding: 13px 16px; border-bottom: 1px solid var(--border); align-items: center; font-size: 13px; }
 
-/* ─── CONTENT ─── */
-.content {
-  flex: 1;
-  padding: 24px 28px;
-  display: flex; flex-direction: column; gap: 20px;
-}
+.log-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-top: 10px; }
+.log-header { padding: 8px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.log-body { padding: 10px 16px; max-height: 100px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 
-.toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-}
-.toolbar-left { display: flex; align-items: center; gap: 10px; }
-.toolbar-right { display: flex; align-items: center; gap: 10px; }
-
-.filter-btn {
-  padding: 7px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--border2);
-  background: var(--bg2);
-  color: var(--text2);
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  cursor: pointer; transition: all .15s;
-  letter-spacing: .5px;
-}
-.filter-btn:hover, .filter-btn.active {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  background: var(--cyan-dim);
-}
-
-.search-input {
-  padding: 7px 14px 7px 34px;
-  border-radius: 6px;
-  border: 1px solid var(--border2);
-  background: var(--bg2);
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  outline: none; width: 220px;
-  transition: border-color .15s;
-  position: relative;
-}
-.search-input:focus { border-color: var(--cyan); }
-.search-wrap { position: relative; }
-.search-wrap::before {
-  content: '⌕';
-  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-  color: var(--text3); font-size: 15px; pointer-events: none;
-}
-
-.interval-select {
-  padding: 7px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border2);
-  background: var(--bg2);
-  color: var(--text2);
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  outline: none; cursor: pointer;
-}
-
-/* ─── CALLS TABLE ─── */
-.table-wrap {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  flex: 1;
-}
-
-.table-head {
-  display: grid;
-  grid-template-columns: 180px 1fr 110px 110px 80px 110px 100px;
-  padding: 10px 16px;
-  background: var(--bg3);
-  border-bottom: 1px solid var(--border);
-}
-.th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px; color: var(--text3);
-  letter-spacing: 2px; text-transform: uppercase;
-}
-
-.calls-list {
-  min-height: 280px;
-  max-height: calc(100vh - 340px);
-  overflow-y: auto;
-}
-.calls-list::-webkit-scrollbar { width: 4px; }
-.calls-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-.call-row {
-  display: grid;
-  grid-template-columns: 180px 1fr 110px 110px 80px 110px 100px;
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-  transition: background .15s;
-  animation: rowIn .3s ease;
-}
-@keyframes rowIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
-.call-row:hover { background: rgba(0,212,255,.04); }
-
-.col-uuid { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-number { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px; }
-.type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-.type-movel { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,157,.2); }
-.type-fixo  { background: var(--cyan-dim);  color: var(--cyan);  border: 1px solid rgba(0,212,255,.2); }
-.col-duration { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--amber); font-weight: 500; }
-.col-direction { font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; align-items: center; gap: 5px; }
-.dir-in  { color: var(--green); }
-.dir-out { color: var(--red); }
-.col-state { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
-.state-active { color: var(--green); }
-.state-hold   { color: var(--amber); }
-.state-other  { color: var(--text3); }
-.col-agent { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.col-fb { display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-.fb-ok  { color: var(--green); }
-
-/* ─── LOG CONSOLE ─── */
-.log-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.log-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); }
-.log-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-.log-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: pulseBlink 1.4s infinite; }
-.log-clear { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text3); background: none; border: none; cursor: pointer; }
-.log-body { padding: 10px 16px; max-height: 120px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; }
-.log-line { color: var(--text3); }
-.log-line.info .msg { color: var(--cyan); }
-.log-line.ok   .msg { color: var(--green); }
-.log-line.err  .msg { color: var(--red); }
-
-/* ─── FOOTER ─── */
-.footer { padding: 10px 28px; border-top: 1px solid var(--border); background: rgba(7,11,20,.9); display: flex; align-items: center; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text3); }
-
-/* ─── TOAST ─── */
-.toast-container { position: fixed; bottom: 60px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
-.toast { padding: 10px 16px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid; animation: toastIn .25s ease; max-width: 320px; }
-@keyframes toastIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
-.toast.t-ok   { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-.toast.t-err  { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
-
-.sync-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; background: transparent; transition: all .3s; }
+.sync-bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; }
 .sync-bar.syncing { background: linear-gradient(90deg, var(--cyan), var(--purple), var(--cyan)); background-size: 200% 100%; animation: scanBar 1s linear infinite; }
 @keyframes scanBar { to { background-position: -200% 0; } }
 </style>
@@ -322,7 +106,6 @@ body::after {
 <body>
 <div class="sync-bar" id="syncBar"></div>
 <div class="shell">
-
   <header class="topbar">
     <div class="brand">
       <div class="brand-logo">FD</div>
@@ -332,289 +115,121 @@ body::after {
       </div>
     </div>
     <div class="topbar-right">
-      <div class="status-pill connecting" id="apiStatus">
-        <div class="pulse"></div>
-        <span id="apiStatusText">CONECTANDO</span>
-      </div>
-      <div class="status-pill" id="fbStatus">
-        <div class="pulse"></div>
-        <span id="fbStatusText">FIREBASE</span>
-      </div>
-      <div class="clock" id="clock">--:--:--</div>
+      <div class="status-pill" id="apiStatus"><div class="pulse"></div><span id="apiStatusText">A GUARDAR DADOS</span></div>
+      <div class="status-pill" id="fbStatus"><div class="pulse"></div><span id="fbStatusText">FIREBASE</span></div>
     </div>
   </header>
 
   <section class="kpi-bar">
-    <div class="kpi k-cyan">
-      <div class="kpi-label">Chamadas Ativas</div>
-      <div class="kpi-value" id="kpi-total">0</div>
-      <div class="kpi-sub">processando agora</div>
-    </div>
-    <div class="kpi k-green">
-      <div class="kpi-label">Celular (Móvel)</div>
-      <div class="kpi-value" id="kpi-movel">0</div>
-      <div class="kpi-sub">terminação móvel</div>
-    </div>
-    <div class="kpi k-amber">
-      <div class="kpi-label">Fixo / Outro</div>
-      <div class="kpi-value" id="kpi-fixo">0</div>
-      <div class="kpi-sub">terminação fixa</div>
-    </div>
-    <div class="kpi k-purple">
-      <div class="kpi-label">Inbound</div>
-      <div class="kpi-value" id="kpi-in">0</div>
-      <div class="kpi-sub">entrantes</div>
-    </div>
-    <div class="kpi k-red">
-      <div class="kpi-label">Outbound</div>
-      <div class="kpi-value" id="kpi-out">0</div>
-      <div class="kpi-sub">saintes</div>
-    </div>
+    <div class="kpi"><div class="kpi-label">Ativas</div><div class="kpi-value" id="kpi-total">0</div></div>
+    <div class="kpi"><div class="kpi-label">Móvel</div><div class="kpi-value" id="kpi-movel">0</div></div>
+    <div class="kpi"><div class="kpi-label">Fixo</div><div class="kpi-value" id="kpi-fixo">0</div></div>
+    <div class="kpi"><div class="kpi-label">Entrantes</div><div class="kpi-value" id="kpi-in">0</div></div>
+    <div class="kpi"><div class="kpi-label">Saintes</div><div class="kpi-value" id="kpi-out">0</div></div>
   </section>
 
   <main class="content">
-
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">TODOS</button>
-        <button class="filter-btn" data-filter="movel" onclick="setFilter('movel',this)">📱 MÓVEL</button>
-        <button class="filter-btn" data-filter="fixo" onclick="setFilter('fixo',this)">📞 FIXO</button>
-        <button class="filter-btn" data-filter="inbound" onclick="setFilter('inbound',this)">↙ INBOUND</button>
-        <button class="filter-btn" data-filter="outbound" onclick="setFilter('outbound',this)">↗ OUTBOUND</button>
-      </div>
-      <div class="toolbar-right">
-        <div class="search-wrap">
-          <input class="search-input" id="searchInput" placeholder="buscar número / agente..." oninput="renderTable()">
-        </div>
-        <select class="interval-select" id="intervalSelect" onchange="setInterval_()">
-          <option value="5000">↻ 5s</option>
-          <option value="10000">↻ 10s</option>
-          <option value="30000">↻ 30s</option>
-          <option value="0">↻ Pausar</option>
-        </select>
-      </div>
-    </div>
-
     <div class="table-wrap">
       <div class="table-head">
-        <div class="th">UUID</div>
-        <div class="th">Número / Tipo</div>
-        <div class="th">Duração</div>
-        <div class="th">Direção</div>
-        <div class="th">Status</div>
-        <div class="th">Agente / Fila</div>
-        <div class="th">Firebase</div>
+        <div class="th">UUID</div><div class="th">Número</div><div class="th">Duração</div><div class="th">Direção</div><div class="th">Status</div><div class="th">Agente</div><div class="th">Sync</div>
       </div>
       <div class="calls-list" id="callsList"></div>
     </div>
-
     <div class="log-panel">
-      <div class="log-header">
-        <div class="log-title"><div class="log-live-dot"></div>LOG DO BILHETADOR</div>
-        <button class="log-clear" onclick="clearLog()">[ LIMPAR ]</button>
-      </div>
+      <div class="log-header">LOG DO SISTEMA</div>
       <div class="log-body" id="logBody"></div>
     </div>
-
   </main>
-
-  <footer class="footer">
-    <span>FastDialer Bilhetador v1.0 · tarifadorhsr</span>
-    <div class="footer-right">
-      <span id="footer-sync">Último sync: –</span>
-      <span id="footer-count">0 registros enviados</span>
-    </div>
-  </footer>
 </div>
 
-<div class="toast-container" id="toastContainer"></div>
-
 <script>
-// CONFIG FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
   projectId: "tarifadorhsr",
   appId: "1:288717924509:web:459c4dc680712992654c74"
 };
-const app = firebase.initializeApp(firebaseConfig);
-const db  = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-const PROXY = 'https://cors-anywhere.herokuapp.com/';
+// MUDANÇA PRINCIPAL: Usando AllOrigins para evitar o erro 404 do Heroku
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
-const FULL_URL = PROXY + API_URL;
+const PROXY_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_URL)}`;
 
 let allCalls = [];
-let activeFilter = 'all';
-let pollTimer = null;
-let pollInterval = 5000;
-let fbCount = 0;
-let fbReady = false;
-
-function classifyPhone(number) {
-  const n = String(number || '').replace(/\D/g, '');
-  if (n.length === 11 && ['7','8','9'].includes(n[2])) return 'movel';
-  return 'fixo';
-}
-
-function ts() { return new Date().toLocaleTimeString('pt-BR'); }
 
 function log(msg, level = 'info') {
-  const body = document.getElementById('logBody');
-  const line = document.createElement('div');
-  line.className = `log-line ${level}`;
-  line.innerHTML = `<span class="ts">[${ts()}]</span> <span class="msg">${msg}</span>`;
-  body.appendChild(line);
-  body.scrollTop = body.scrollHeight;
-}
-
-function clearLog() { document.getElementById('logBody').innerHTML = ''; }
-
-function toast(msg, type = 't-info') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  c.appendChild(t);
-  setTimeout(() => { t.remove(); }, 3000);
-}
-
-setInterval(() => { document.getElementById('clock').textContent = ts(); }, 1000);
-
-function checkFirebase() {
-  db.ref('.info/connected').on('value', snap => {
-    fbReady = snap.val() === true;
-    const pill = document.getElementById('fbStatus');
-    pill.className = fbReady ? 'status-pill live' : 'status-pill error';
-    document.getElementById('fbStatusText').textContent = fbReady ? 'FIREBASE ●' : 'FIREBASE ✕';
-  });
-}
-
-async function writeToFirebase(call) {
-  const tipo = classifyPhone(call.caller_number);
-  const payload = {
-    uuid: call.uuid,
-    destino: call.caller_number || '',
-    duracao: call.duration || 0,
-    duracao_fmt: call.duration_formatted || '00:00:00',
-    fila: call.agent_info?.agent_name || 'Fila Geral',
-    tipo: tipo,
-    direction: call.direction || '',
-    state: call.state || '',
-    updated_at: Date.now()
-  };
-  try {
-    await db.ref(`chamadas_ativas/${call.uuid}`).set(payload);
-    return true;
-  } catch(e) { return false; }
-}
-
-async function cleanupFirebase(activeUUIDs) {
-  try {
-    const snap = await db.ref('chamadas_ativas').once('value');
-    const existing = snap.val() || {};
-    const toDelete = Object.keys(existing).filter(k => !activeUUIDs.includes(k));
-    if (toDelete.length > 0) {
-      const updates = {};
-      toDelete.forEach(k => updates[`chamadas_ativas/${k}`] = null);
-      await db.ref().update(updates);
-    }
-  } catch(e) {}
+  const b = document.getElementById('logBody');
+  b.innerHTML += `<div class="log-line" style="color:${level==='err'?'#ff4560':'#00ff9d'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  b.scrollTop = b.scrollHeight;
 }
 
 async function fetchCalls() {
-  const syncBar = document.getElementById('syncBar');
-  const apiPill = document.getElementById('apiStatus');
-  syncBar.classList.add('syncing');
+  const bar = document.getElementById('syncBar');
+  const apiS = document.getElementById('apiStatus');
+  bar.classList.add('syncing');
 
   try {
-    const res = await fetch(FULL_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    const json = await res.json();
-    const calls = json.calls || [];
-    allCalls = calls;
+    const response = await fetch(`${PROXY_URL}&t=${Date.now()}`);
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    
+    const data = await response.json();
+    allCalls = data.calls || [];
 
-    apiPill.className = 'status-pill live';
-    document.getElementById('apiStatusText').textContent = `LIVE ● ${calls.length} chamadas`;
+    apiS.className = 'status-pill live';
+    document.getElementById('apiStatusText').textContent = `LIVE: ${allCalls.length}`;
+    
+    const updates = {};
+    allCalls.forEach(c => {
+      updates[`chamadas_ativas/${c.uuid}`] = {
+        uuid: c.uuid,
+        numero: c.caller_number,
+        duracao: c.duration_formatted,
+        direcao: c.direction,
+        timestamp: Date.now()
+      };
+    });
 
-    let written = 0;
-    const activeUUIDs = calls.map(c => c.uuid);
-    for (const call of calls) {
-      if (await writeToFirebase(call)) written++;
+    if (Object.keys(updates).length > 0) {
+      await db.ref().update(updates);
     }
-    fbCount += written;
-    await cleanupFirebase(activeUUIDs);
-
+    
     renderKPIs();
     renderTable();
-    document.getElementById('footer-sync').textContent = `Último sync: ${ts()}`;
-    document.getElementById('footer-count').textContent = `${fbCount} registros processados`;
+    log(`Sincronizado: ${allCalls.length} chamadas.`, 'ok');
 
-  } catch(err) {
-    apiPill.className = 'status-pill error';
+  } catch (err) {
+    apiS.className = 'status-pill error';
     document.getElementById('apiStatusText').textContent = 'ERRO API';
-    log(`Erro: ${err.message}`, 'err');
+    log(`Erro na API: ${err.message}`, 'err');
   } finally {
-    syncBar.classList.remove('syncing');
+    bar.classList.remove('syncing');
   }
 }
 
 function renderKPIs() {
   document.getElementById('kpi-total').textContent = allCalls.length;
-  document.getElementById('kpi-movel').textContent = allCalls.filter(c => classifyPhone(c.caller_number) === 'movel').length;
-  document.getElementById('kpi-fixo').textContent = allCalls.filter(c => classifyPhone(c.caller_number) === 'fixo').length;
-  document.getElementById('kpi-in').textContent = allCalls.filter(c => (c.direction||'').toLowerCase().includes('inbound')).length;
-  document.getElementById('kpi-out').textContent = allCalls.filter(c => (c.direction||'').toLowerCase().includes('outbound')).length;
+  document.getElementById('kpi-in').textContent = allCalls.filter(c => c.direction.toLowerCase().includes('in')).length;
+  document.getElementById('kpi-out').textContent = allCalls.filter(c => c.direction.toLowerCase().includes('out')).length;
 }
 
 function renderTable() {
   const container = document.getElementById('callsList');
-  const search = (document.getElementById('searchInput').value || '').toLowerCase();
-  let calls = [...allCalls];
-
-  if (activeFilter === 'movel') calls = calls.filter(c => classifyPhone(c.caller_number) === 'movel');
-  if (activeFilter === 'fixo') calls = calls.filter(c => classifyPhone(c.caller_number) === 'fixo');
-  if (activeFilter === 'inbound') calls = calls.filter(c => (c.direction||'').toLowerCase().includes('inbound'));
-  if (activeFilter === 'outbound') calls = calls.filter(c => (c.direction||'').toLowerCase().includes('outbound'));
-
-  if (search) {
-    calls = calls.filter(c => (c.caller_number||'').includes(search) || (c.agent_info?.agent_name||'').toLowerCase().includes(search));
-  }
-
-  container.innerHTML = calls.map(c => `
+  container.innerHTML = allCalls.map(c => `
     <div class="call-row">
-      <div class="col-uuid">${(c.uuid || '').substring(0, 8)}…</div>
-      <div class="col-number">${c.caller_number || '–'} <span class="type-badge ${classifyPhone(c.caller_number) === 'movel' ? 'type-movel' : 'type-fixo'}">${classifyPhone(c.caller_number).toUpperCase()}</span></div>
-      <div class="col-duration">${c.duration_formatted || '00:00:00'}</div>
-      <div class="col-direction">${(c.direction || '').toLowerCase().includes('inbound') ? '<span class="dir-in">↙ IN</span>' : '<span class="dir-out">↗ OUT</span>'}</div>
-      <div class="col-state ${c.state === 'ACTIVE' ? 'state-active' : 'state-hold'}">● ${c.state}</div>
-      <div class="col-agent">${c.agent_info?.agent_name || 'Fila Geral'}</div>
-      <div class="col-fb fb-ok">✔ SYNC</div>
+      <div>${c.uuid.substring(0,8)}</div>
+      <div>${c.caller_number}</div>
+      <div>${c.duration_formatted}</div>
+      <div>${c.direction}</div>
+      <div style="color:#00ff9d">${c.state}</div>
+      <div>${c.agent_info?.agent_name || 'Fila'}</div>
+      <div style="color:#00d4ff">✔</div>
     </div>
   `).join('');
 }
 
-function setFilter(f, btn) {
-  activeFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTable();
-}
-
-function setInterval_() {
-  const val = parseInt(document.getElementById('intervalSelect').value);
-  pollInterval = val;
-  if (pollTimer) clearInterval(pollTimer);
-  if (val > 0) pollTimer = setInterval(fetchCalls, val);
-}
-
-function init() {
-  checkFirebase();
-  fetchCalls();
-  pollTimer = setInterval(fetchCalls, pollInterval);
-  log('FastDialer Bilhetador Iniciado.', 'ok');
-}
-
-init();
+setInterval(fetchCalls, 5000);
+fetchCalls();
 </script>
 </body>
 </html>
