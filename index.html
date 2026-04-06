@@ -2,65 +2,55 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>FastDialer · Bilhetador Profissional</title>
+<title>AEtelecom · Bilhetador GFS</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@600;700&display=swap');
-  :root { --bg: #050810; --card: #0d1321; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; --red: #ff4560; }
+  :root { --bg: #050810; --card: #0d1321; --border: #1e2d45; --cyan: #00d4ff; --green: #00ff9d; --amber: #ffb800; --text: #c8d8ee; }
   body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; padding: 20px; }
   
-  /* Dashboard Superior */
+  .header-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
   .resumo-geral { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px; }
-  .box-total { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-  .box-total span { display: block; font-size: 12px; color: #5c7a9d; text-transform: uppercase; margin-bottom: 5px; }
-  .box-total b { font-family: 'JetBrains Mono'; font-size: 28px; color: #fff; }
+  .box-total { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 10px; text-align: center; }
+  .box-total b { font-family: 'JetBrains Mono'; font-size: 26px; color: #fff; }
 
-  /* Botões e Ações */
-  .actions { display: flex; gap: 15px; margin-bottom: 30px; }
-  .btn { 
-    background: #16213e; border: 1px solid var(--cyan); color: var(--cyan); 
+  .btn-cdr { 
+    background: #16213e; border: 1px solid var(--green); color: var(--green); 
     padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold;
-    font-family: 'Rajdhani'; text-transform: uppercase; transition: 0.3s;
+    text-transform: uppercase; margin-bottom: 30px;
   }
-  .btn:hover { background: var(--cyan); color: #000; box-shadow: 0 0 15px var(--cyan); }
+  .btn-cdr:hover { background: var(--green); color: #000; }
 
-  /* Grid de Projetos */
-  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-left: 4px solid var(--cyan); }
-  .card-fila h2 { margin: 0 0 15px 0; color: var(--cyan); font-size: 14px; font-family: 'JetBrains Mono'; word-break: break-all; }
+  .grid-filas { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+  .card-fila { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-top: 4px solid var(--cyan); }
+  .card-fila h2 { margin: 0 0 10px 0; color: var(--cyan); font-size: 14px; font-family: 'JetBrains Mono'; }
+  .entrevistador-tag { font-size: 11px; color: #5c7a9d; margin-bottom: 15px; display: block; }
   
-  .item-custo { display: flex; justify-content: space-between; margin-bottom: 10px; font-family: 'JetBrains Mono'; font-size: 14px; }
+  .item-custo { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'JetBrains Mono'; font-size: 14px; }
   .total-fila { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 20px; color: #fff; font-weight: 700; }
-  
-  .status-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 5px 20px; font-size: 11px; display: flex; justify-content: space-between; border-top: 1px solid var(--border); }
+  .status-bar { position: fixed; bottom: 0; width: 100%; background: #000; font-size: 10px; padding: 5px 20px; }
 </style>
 </head>
 <body>
 
-<header style="margin-bottom: 30px;">
-  <h1 style="margin:0; font-size: 26px;">FAST<span style="color:var(--cyan)">DIALER</span> <small style="font-size:12px; color:#5c7a9d;">SISTEMA DE BILHETAGEM GFS</small></h1>
-</header>
+<div class="header-meta">
+  <h1 style="margin:0; font-size: 24px;">AE<span style="color:var(--cyan)">telecom</span> <small style="font-size:12px; color:var(--green)">· Bilhetador GFS</small></h1>
+  <div id="lastSync" style="font-size: 12px; color: #5c7a9d;">---</div>
+</div>
 
 <div class="resumo-geral">
-  <div class="box-total"><span>Fixo (0.028)</span><b id="geral-fixo" style="color:var(--amber)">R$ 0,00</b></div>
-  <div class="box-total"><span>Celular (0.03)</span><b id="geral-cel" style="color:var(--green)">R$ 0,00</b></div>
-  <div class="box-total"><span>Total Acumulado</span><b id="geral-total" style="color:var(--cyan)">R$ 0,00</b></div>
+  <div class="box-total"><span>Fixo (0.028)</span><br><b id="geral-fixo" style="color:var(--amber)">R$ 0,00</b></div>
+  <div class="box-total"><span>Celular (0.03)</span><br><b id="geral-cel" style="color:var(--green)">R$ 0,00</b></div>
+  <div class="box-total"><span>Total Geral</span><br><b id="geral-total" style="color:var(--cyan)">R$ 0,00</b></div>
 </div>
 
-<div class="actions">
-  <button class="btn" onclick="exportarCDR()">⬇ Extrair CDR Completo (CSV)</button>
-</div>
+<button class="btn-cdr" onclick="exportarCDR()">⬇ Extrair CDR AEtelecom (CSV)</button>
 
 <div class="grid-filas" id="gridFilas"></div>
-
-<div class="status-footer">
-  <div id="apiStatus">CONECTANDO...</div>
-  <div id="lastSync">---</div>
-</div>
+<div class="status-bar" id="apiStatus">CONECTANDO...</div>
 
 <script>
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAtAuuU-FTTXnQHV_Rc_3Vb-im-1jLnEM4",
   databaseURL: "https://tarifadorhsr-default-rtdb.firebaseio.com/",
@@ -70,12 +60,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const API_URL = 'https://fastdialer.fastquest.net/app/extensions/active_calls_api.php';
-
-// ESTEIRA DE PROXIES (Se um falha, o código tenta o próximo)
 const proxies = [
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`,
-  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url) => `https://thingproxy.freeboard.io/fetch/${url}`
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`
 ];
 
 const PRECO_FIXO = 0.028; //
@@ -84,19 +71,29 @@ const PRECO_CEL = 0.030;  //
 let dadosFilas = {};
 let chamadasParaCDR = [];
 
-// Escuta o Firebase
 db.ref('financeiro/filas').on('value', snap => {
   dadosFilas = snap.val() || {};
   renderizar();
 });
 
-function identificarPartes(rawAgent) {
-  const info = rawAgent || "Desconhecido;Desconhecido";
-  const partes = info.split(';');
-  return {
-    fila: partes[0] ? partes[0].trim() : "Sem Fila", //
-    entrevistador: partes[1] ? partes[1].trim() : "Operador" //
-  };
+// NOVA LÓGICA DE IDENTIFICAÇÃO
+function separarFilaEEntrevistador(raw) {
+  if (!raw || raw === "Agente não identificado") return { fila: "Fila Geral", entrevistador: "Sistema" };
+  
+  // Divide no ';' primeiro para tirar o ID
+  const base = raw.split(';')[0];
+  
+  // No print, o padrão parece ser "CÓDIGO_FILA-NOME_ENTREVISTADOR"
+  // Vamos tentar separar pelo primeiro "-" que encontrar
+  if (base.includes('-')) {
+    const partes = base.split('-');
+    return {
+      fila: partes[0].trim(),           // Tudo antes do '-' é a FILA
+      entrevistador: partes[1].trim()    // Tudo depois é o ENTREVISTADOR
+    };
+  }
+  
+  return { fila: base.trim(), entrevistador: "Não identificado" };
 }
 
 function isCelular(num) {
@@ -104,34 +101,36 @@ function isCelular(num) {
   return n.length >= 10 && ["7","8","9"].includes(n.charAt(2)); //
 }
 
-async function fetchResiliente(url) {
-  for (const proxyFn of proxies) {
-    try {
-      const res = await fetch(proxyFn(url), { timeout: 8000 });
-      if (res.ok) return await res.json();
-    } catch (e) { console.warn("Proxy falhou, tentando próximo..."); }
-  }
-  throw new Error("Todos os proxies falharam.");
-}
-
 async function rodarCiclo() {
   const statusEl = document.getElementById('apiStatus');
   try {
-    const data = await fetchResiliente(API_URL);
+    let data;
+    try {
+      const res = await fetch(proxies[0](API_URL));
+      data = await res.json();
+    } catch {
+      const res2 = await fetch(proxies[1](API_URL));
+      data = await res2.json();
+    }
+
     const calls = data.calls || [];
-    
+    chamadasParaCDR = [];
+
     calls.forEach(c => {
-      const info = identificarPartes(c.agent_info?.agent_name);
+      const info = separarFilaEEntrevistador(c.agent_info?.agent_name);
       const tipo = isCelular(c.caller_number) ? 'celular' : 'fixo';
       const minutos = (parseInt(c.duration) || 0) / 60;
       const custo = minutos * (tipo === 'celular' ? PRECO_CEL : PRECO_FIXO);
 
-      if (!dadosFilas[info.fila]) dadosFilas[info.fila] = { fixo: 0, celular: 0 };
+      // Agrupa no Firebase pela FILA (para cobrança)
+      if (!dadosFilas[info.fila]) dadosFilas[info.fila] = { fixo: 0, celular: 0, ultimoEntrevistador: "" };
       dadosFilas[info.fila][tipo] += custo;
+      dadosFilas[info.fila].ultimoEntrevistador = info.entrevistador;
 
       chamadasParaCDR.push({
-        entrevistador: info.entrevistador,
+        operadora: "AEtelecom",
         fila: info.fila,
+        entrevistador: info.entrevistador,
         destino: c.caller_number,
         tipo: tipo.toUpperCase(),
         valor: custo.toFixed(4)
@@ -139,37 +138,27 @@ async function rodarCiclo() {
     });
 
     await db.ref('financeiro/filas').set(dadosFilas);
-    statusEl.innerHTML = "● API ONLINE"; statusEl.style.color = "var(--green)";
-    document.getElementById('lastSync').innerText = "Última atualização: " + new Date().toLocaleTimeString();
+    statusEl.innerText = "● API SINCRONIZADA";
+    document.getElementById('lastSync').innerText = "Sync: " + new Date().toLocaleTimeString();
   } catch (err) {
-    statusEl.innerHTML = "○ ERRO DE CONEXÃO (LIMITADO)"; statusEl.style.color = "var(--red)";
+    statusEl.innerText = "○ ERRO DE CONEXÃO";
   }
-}
-
-function exportarCDR() {
-  if (chamadasParaCDR.length === 0) return alert("Aguarde o primeiro ciclo para exportar.");
-  let csv = "Entrevistador;Fila;Destino;Tipo;Valor\n";
-  chamadasParaCDR.forEach(r => csv += `${r.entrevistador};${r.fila};${r.destino};${r.tipo};${r.valor}\n`);
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `CDR_GFS_${Date.now()}.csv`;
-  a.click();
 }
 
 function renderizar() {
   const container = document.getElementById('gridFilas');
   let gFixo = 0, gCel = 0;
 
-  container.innerHTML = Object.entries(dadosFilas).map(([nome, val]) => {
+  container.innerHTML = Object.entries(dadosFilas).map(([filaNome, val]) => {
     const total = (val.fixo || 0) + (val.celular || 0);
     gFixo += (val.fixo || 0); gCel += (val.celular || 0);
     return `
       <div class="card-fila">
-        <h2>${nome}</h2>
+        <h2>PROJETO: ${filaNome}</h2>
+        <span class="entrevistador-tag">Último Operador: ${val.ultimoEntrevistador || '---'}</span>
         <div class="item-custo"><span>Fixo:</span><span style="color:var(--amber)">R$ ${val.fixo.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
         <div class="item-custo"><span>Celular:</span><span style="color:var(--green)">R$ ${val.celular.toLocaleString('pt-BR', {minimumFractionDigits: 3})}</span></div>
-        <div class="total-fila"><span>TOTAL:</span><span style="color:var(--cyan)">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
+        <div class="total-fila"><span>TOTAL FILA:</span><span style="color:var(--cyan)">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
       </div>
     `;
   }).join('');
@@ -177,6 +166,17 @@ function renderizar() {
   document.getElementById('geral-fixo').innerText = `R$ ${gFixo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
   document.getElementById('geral-cel').innerText = `R$ ${gCel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
   document.getElementById('geral-total').innerText = `R$ ${(gFixo + gCel).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+}
+
+function exportarCDR() {
+  if (chamadasParaCDR.length === 0) return alert("Aguarde o processamento...");
+  let csv = "Operadora;Fila;Entrevistador;Destino;Tipo;Valor\n";
+  chamadasParaCDR.forEach(r => csv += `${r.operadora};${r.fila};${r.entrevistador};${r.destino};${r.tipo};${r.valor}\n`);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `CDR_AEtelecom_${Date.now()}.csv`;
+  a.click();
 }
 
 setInterval(rodarCiclo, 300000);
